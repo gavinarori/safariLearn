@@ -1,70 +1,222 @@
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/field";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useAuth } from "@/contexts/auth";
+import { useRouter } from 'next/navigation'
 
-export function SignupForm({
-  className,
-  ...props
-}: React.ComponentProps<"form">) {
+export function SignupForm({ className, ...props }: React.ComponentProps<"form">) {
+  const { signUp } = useAuth();
+  const router = useRouter()
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<"trainer" | "learner">("learner");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [bio, setBio] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const avatars = [
+    "/averagebulk@192.webp",
+    "/batperson@192.webp",
+    "/gordon@192.webp",
+    "/idiotsandwich@192.webp",
+    "/spiderperson@192.webp",
+    "/superperson@192.webp",
+    "/wonderperson@192.webp",
+    "/yellingcat@192.webp",
+    "/yellingwoman@192.webp",
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await signUp(email, password, {
+        full_name: fullName,
+        role,
+        avatar_url: avatarUrl || null,
+        bio: bio || null,
+      });
+      router.push("/login");
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "Failed to create account.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form
+      onSubmit={handleSubmit}
+      className={cn("flex flex-col gap-6", className)}
+      {...props}
+    >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Create your account</h1>
-          <p className="text-muted-foreground text-sm text-balance">
+          <p className="text-muted-foreground text-sm">
             Fill in the form below to create your account
           </p>
         </div>
+
         <Field>
-          <FieldLabel htmlFor="name">Full Name</FieldLabel>
-          <Input id="name" type="text" placeholder="John Doe" required />
+          <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+          <Input
+            id="fullName"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="John Doe"
+            required
+          />
         </Field>
+
+<Field>
+  <FieldLabel htmlFor="role">Role</FieldLabel>
+  <ToggleGroup
+    type="single"
+    value={role}
+    onValueChange={(value) => value && setRole(value as "learner" | "trainer")}
+    className="justify-center"
+  >
+    <ToggleGroupItem
+      value="learner"
+      aria-label="Select learner"
+      className="px-6 py-2 rounded-md text-sm data-[state=on]:bg-primary data-[state=on]:text-white border"
+    >
+      Learner
+    </ToggleGroupItem>
+    <ToggleGroupItem
+      value="trainer"
+      aria-label="Select trainer"
+      className="px-6 py-2 rounded-md text-sm data-[state=on]:bg-primary data-[state=on]:text-white border"
+    >
+      Trainer
+    </ToggleGroupItem>
+  </ToggleGroup>
+  <FieldDescription>Select your role on the platform.</FieldDescription>
+</Field>
+
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" type="email" placeholder="m@example.com" required />
-          <FieldDescription>
-            We&apos;ll use this to contact you. We will not share your email
-            with anyone else.
-          </FieldDescription>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="m@example.com"
+            required
+          />
         </Field>
+
         <Field>
           <FieldLabel htmlFor="password">Password</FieldLabel>
-          <Input id="password" type="password" required />
-          <FieldDescription>
-            Must be at least 8 characters long.
-          </FieldDescription>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </Field>
         <Field>
-          <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
-          <Input id="confirm-password" type="password" required />
-          <FieldDescription>Please confirm your password.</FieldDescription>
+          <FieldLabel htmlFor="confirmPassword">Confirm password</FieldLabel>
+          <Input
+            id="confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel>Choose an Avatar</FieldLabel>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" type="button" className="flex items-center gap-2">
+                {avatarUrl ? (
+                  <Avatar>
+                    <AvatarImage src={avatarUrl} alt="Selected Avatar" />
+                    <AvatarFallback>U</AvatarFallback>
+                  </Avatar>
+                ) : (
+                  "Select Avatar"
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Select Your Avatar</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-4 gap-4 mt-4">
+                {avatars.map((src, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setAvatarUrl(src)}
+                    className={cn(
+                      "rounded-full overflow-hidden border-2 transition-all",
+                      avatarUrl === src ? "border-primary scale-105" : "border-transparent hover:border-muted"
+                    )}
+                  >
+                    <Image src={src} alt={`Avatar ${index + 1}`} width={64} height={64} />
+                  </button>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+          <FieldDescription>Pick a preset avatar. You can change it later.</FieldDescription>
         </Field>
         <Field>
-          <Button type="submit">Create Account</Button>
+          <FieldLabel htmlFor="bio">Short bio (optional)</FieldLabel>
+          <Textarea
+            id="bio"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="Tell people what you teach or what you want to learn..."
+            rows={3}
+          />
         </Field>
-        <FieldSeparator>Or continue with</FieldSeparator>
+
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
         <Field>
-          <Button variant="outline" type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path
-                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
-                fill="currentColor"
-              />
-            </svg>
-            Sign up with GitHub
+          <Button type="submit" disabled={loading}>
+            {loading ? "Creating..." : "Create Account"}
           </Button>
-          <FieldDescription className="px-6 text-center">
-            Already have an account? <a href="#">Sign in</a>
-          </FieldDescription>
         </Field>
       </FieldGroup>
     </form>
-  )
+  );
 }
