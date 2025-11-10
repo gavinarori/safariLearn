@@ -23,11 +23,11 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <div className="bg-muted relative hidden lg:block">
+      <div className="bg-muted relative hidden mt-2  lg:block">
         <img
-          src="/placeholder.svg"
+          src="/people-training-together-outdoors.jpg"
           alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          className="absolute inset-0 h-full w-full object-cover rounded-3xl  dark:grayscale"
         />
       </div>
     </div>

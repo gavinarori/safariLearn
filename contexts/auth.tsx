@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+"use client"
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { createClient } from "@/superbase/client";
 
 type UserProfile = {
@@ -8,12 +16,23 @@ type UserProfile = {
   avatar_url?: string | null;
   bio?: string | null;
   role?: "trainer" | "learner";
+  created_at?: string;
+  updated_at?: string;
 };
 
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName?: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    profile?: {
+      full_name?: string;
+      role?: "trainer" | "learner";
+      avatar_url?: string | null;
+      bio?: string | null;
+    }
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -24,7 +43,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Create a fresh Supabase client (scoped to browser)
   const supabase = createClient();
 
   const fetchUserProfile = async (userId: string) => {
@@ -34,8 +52,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq("id", userId)
       .single();
 
-    if (error) console.error("Error fetching user profile:", error);
-    else setUser(data);
+    if (error) {
+      console.error("Error fetching user profile:", error);
+    } else {
+      setUser(data);
+    }
   };
 
   useEffect(() => {
@@ -65,21 +86,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+
+  const signUp = async (
+    email: string,
+    password: string,
+    profile: {
+      full_name?: string;
+      role?: "trainer" | "learner";
+      avatar_url?: string | null;
+      bio?: string | null;
+    } = {}
+  ) => {
     const { data, error } = await supabase.auth.signUp({ email, password });
 
     if (error) throw error;
 
     const newUser = data.user;
     if (newUser) {
-      await supabase.from("users").insert([
-        {
-          id: newUser.id,
-          email,
-          full_name: fullName || "",
-          role: "learner",
-        },
-      ]);
+      const now = new Date().toISOString();
+      const profileData = {
+        id: newUser.id,
+        email,
+        full_name: profile.full_name ?? "",
+        role: profile.role ?? "learner",
+        avatar_url: profile.avatar_url ?? null,
+        bio: profile.bio ?? null,
+        created_at: now,
+        updated_at: now,
+      };
+
+      const { error: insertError } = await supabase
+        .from("users")
+        .insert([profileData]);
+
+      if (insertError) {
+        console.error("Error inserting user profile:", insertError);
+        throw insertError;
+      }
 
       await fetchUserProfile(newUser.id);
     }

@@ -1,4 +1,6 @@
-import { GalleryVerticalEnd } from "lucide-react"
+import {
+  IconInnerShadowTop,
+} from "@tabler/icons-react"
 
 import { LoginForm } from "@/components/login-form"
 
@@ -9,9 +11,9 @@ export default function LoginPage() {
         <div className="flex justify-center gap-2 md:justify-start">
           <a href="#" className="flex items-center gap-2 font-medium">
             <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-4" />
+              <IconInnerShadowTop className="size-4" />
             </div>
-            Acme Inc.
+            safariLearn.
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
@@ -20,11 +22,11 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="bg-muted relative hidden lg:block">
+      <div className="bg-muted relative hidden mt-2 lg:block">
         <img
-          src="/placeholder.svg"
+          src="/college-students-different-ethnicities-cramming.jpg"
           alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          className="absolute inset-0 h-full w-full object-cover rounded-3xl dark:grayscale"
         />
       </div>
     </div>
