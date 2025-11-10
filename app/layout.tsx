@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider"
 import { CalendarProvider } from "@/components/event-calendar/calendar-context";
+import { AuthProvider } from "@/contexts/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <AuthProvider>
         <CalendarProvider> 
        <ThemeProvider
             attribute="class"
@@ -39,6 +41,7 @@ export default function RootLayout({
             {children}
           </ThemeProvider>
           </CalendarProvider> 
+          </AuthProvider>
       </body>
     </html>
   );
