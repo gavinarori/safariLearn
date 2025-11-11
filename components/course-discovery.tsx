@@ -1,127 +1,68 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { IconSearch, IconStar, IconUsers, IconClock, IconFilter } from "@tabler/icons-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react";
+import { IconSearch, IconStar, IconUsers, IconClock, IconFilter } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { getAllCourses, getCoursesByCategory, Course } from "@/services/coursesService";
 
-interface Course {
-  id: string
-  title: string
-  instructor: string
-  thumbnail: string
-  rating: number
-  students: number
-  duration: string
-  price: number
-  category: string
-  level: "beginner" | "intermediate" | "advanced"
-}
+const categories = ["All", "Fitness", "Cardio", "Yoga", "Nutrition", "Business", "Recovery"];
+const levels = ["All Levels", "Beginner", "Intermediate", "Advanced"];
 
-const mockCourses: Course[] = [
-  {
-    id: "1",
-    title: "Advanced Strength Training for Athletes",
-    instructor: "Alex Thompson",
-    thumbnail: "/strength-training-diverse-group.png",
-    rating: 4.8,
-    students: 2340,
-    duration: "8 weeks",
-    price: 49.99,
-    category: "Fitness",
-    level: "advanced",
-  },
-  {
-    id: "2",
-    title: "HIIT Cardio Bootcamp",
-    instructor: "Sarah Martinez",
-    thumbnail: "/cardio-bootcamp.jpg",
-    rating: 4.9,
-    students: 5120,
-    duration: "6 weeks",
-    price: 39.99,
-    category: "Cardio",
-    level: "intermediate",
-  },
-  {
-    id: "3",
-    title: "Yoga Fundamentals for Beginners",
-    instructor: "Emily Chen",
-    thumbnail: "/woman-in-nature-yoga.png",
-    rating: 4.7,
-    students: 8900,
-    duration: "4 weeks",
-    price: 29.99,
-    category: "Yoga",
-    level: "beginner",
-  },
-  {
-    id: "4",
-    title: "Nutrition Coaching Masterclass",
-    instructor: "Dr. James Wilson",
-    thumbnail: "/balanced-nutrition-plate.png",
-    rating: 4.6,
-    students: 3210,
-    duration: "10 weeks",
-    price: 59.99,
-    category: "Nutrition",
-    level: "intermediate",
-  },
-  {
-    id: "5",
-    title: "Personal Training Business Bootcamp",
-    instructor: "Marcus Johnson",
-    thumbnail: "/business-training.jpg",
-    rating: 4.9,
-    students: 1890,
-    duration: "12 weeks",
-    price: 99.99,
-    category: "Business",
-    level: "advanced",
-  },
-  {
-    id: "6",
-    title: "Flexibility & Mobility Training",
-    instructor: "Lisa Rodriguez",
-    thumbnail: "/flexibility.jpg",
-    rating: 4.5,
-    students: 4560,
-    duration: "5 weeks",
-    price: 34.99,
-    category: "Recovery",
-    level: "beginner",
-  },
-]
+export  function CourseDiscovery() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedLevel, setSelectedLevel] = useState("All Levels");
+  const [sortBy, setSortBy] = useState<"popular" | "rating" | "newest">("popular");
 
-const categories = ["All", "Fitness", "Cardio", "Yoga", "Nutrition", "Business", "Recovery"]
-const levels = ["All Levels", "Beginner", "Intermediate", "Advanced"]
+  // ✅ Fetch courses dynamically
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setLoading(true);
+      try {
+        let data: Course[] = [];
+        if (selectedCategory === "All") {
+          data = await getAllCourses();
+        } else {
+          data = await getCoursesByCategory(selectedCategory);
+        }
+        setCourses(data);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCourses();
+  }, [selectedCategory]);
 
-export function CourseDiscovery() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("All")
-  const [selectedLevel, setSelectedLevel] = useState("All Levels")
-  const [sortBy, setSortBy] = useState<"popular" | "rating" | "newest">("popular")
-
-  const filteredCourses = mockCourses.filter((course) => {
+  // 🔍 Search + Filter
+  const filteredCourses = courses.filter((course) => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "All" || course.category === selectedCategory
-    const matchesLevel = selectedLevel === "All Levels" || course.level === selectedLevel.toLowerCase()
+      course.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesSearch && matchesCategory && matchesLevel
-  })
+    const matchesLevel =
+      selectedLevel === "All Levels" ||
+      course.level?.toLowerCase() === selectedLevel.toLowerCase();
 
+    return matchesSearch && matchesLevel;
+  });
+
+  // 🔽 Sorting
   const sortedCourses = [...filteredCourses].sort((a, b) => {
-    if (sortBy === "popular") return b.students - a.students
-    if (sortBy === "rating") return b.rating - a.rating
-    return 0
-  })
+    if (sortBy === "popular") return (b.price ?? 0) - (a.price ?? 0);
+    if (sortBy === "rating") return 0; // replace with actual rating later if you add ratings
+    return 0;
+  });
 
   return (
     <div className="space-y-6 p-6">
+      {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Explore Courses</h1>
         <p className="text-muted-foreground">Discover courses from top trainers and coaches</p>
@@ -129,14 +70,13 @@ export function CourseDiscovery() {
 
       {/* Search & Filters */}
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Main Search Area */}
         <div className="flex-1 space-y-4">
           <Card className="p-6 space-y-4">
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search courses or instructors..."
+                  placeholder="Search courses..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -202,54 +142,68 @@ export function CourseDiscovery() {
       </Card>
 
       {/* Courses Grid */}
-      <div>
-        <p className="text-sm text-muted-foreground mb-4">{sortedCourses.length} courses found</p>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {sortedCourses.map((course) => (
-            <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
-              <div className="relative overflow-hidden h-48 bg-muted">
-                <img
-                  src={course.thumbnail || "/placeholder.svg"}
-                  alt={course.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-                <Badge className="absolute top-3 right-3" variant="secondary">
-                  {course.level}
-                </Badge>
-              </div>
-
-              <div className="p-4 space-y-3">
-                <div>
-                  <h3 className="font-semibold line-clamp-2 text-balance">{course.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{course.instructor}</p>
+      {loading ? (
+        <p className="text-muted-foreground text-center">Loading courses...</p>
+      ) : (
+        <div>
+          <p className="text-sm text-muted-foreground mb-4">
+            {sortedCourses.length} courses found
+          </p>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {sortedCourses.map((course) => (
+              <Card
+                key={course.id}
+                className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+              >
+                <div className="relative overflow-hidden h-48 bg-muted">
+                  <img
+                    src={course.thumbnail_url || "/placeholder.svg"}
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                  {course.level && (
+                    <Badge className="absolute top-3 right-3" variant="secondary">
+                      {course.level}
+                    </Badge>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <IconStar className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{course.rating}</span>
+                <div className="p-4 space-y-3">
+                  <div>
+                    <h3 className="font-semibold line-clamp-2 text-balance">{course.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {course.category || "Uncategorized"}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <IconUsers className="w-4 h-4" />
-                    <span>{course.students.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <IconClock className="w-4 h-4" />
-                    <span>{course.duration}</span>
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <span className="font-bold">${course.price.toFixed(2)}</span>
-                  <Button size="sm" className="gap-2">
-                    Enroll Now
-                  </Button>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <IconUsers className="w-4 h-4" />
+                      <span>Trainer ID: {course.trainer_id?.slice(0, 6)}...</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <IconClock className="w-4 h-4" />
+                      <span>{new Date(course.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <span className="font-bold">
+                      {course.price ? `$${course.price}` : "Free"}
+                    </span>
+                    <Button size="sm" className="gap-2">
+                      Enroll Now
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
-  )
+  );
 }
+
+
+export default CourseDiscovery;
