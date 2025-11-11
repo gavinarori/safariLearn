@@ -14,6 +14,7 @@ export type Course = {
   status: string | null;
   created_at: string;
   updated_at: string | null;
+  trailer_url: string | null; 
 };
 
 const supabase = createClient();
