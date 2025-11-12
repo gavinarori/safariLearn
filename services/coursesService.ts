@@ -14,13 +14,43 @@ export type Course = {
   status: string | null;
   created_at: string;
   updated_at: string | null;
-  trailer_url: string | null; 
+  trailer_url: string | null;
+};
+
+export type Trainer = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio?: string | null;
+  role?: "trainer" | "learner";
+};
+
+export type CourseWithTrainer = Course & {
+  trainer?: Trainer | null;
 };
 
 const supabase = createClient();
 
-export const getAllCourses = async (): Promise<Course[]> => {
+// ✅ Utility to fetch trainer profiles by IDs
+const getTrainersByIds = async (trainerIds: string[]): Promise<Trainer[]> => {
+  if (trainerIds.length === 0) return [];
+
   const { data, error } = await supabase
+    .from("users")
+    .select("id, full_name, avatar_url, bio, role")
+    .in("id", trainerIds);
+
+  if (error) {
+    console.error("Error fetching trainers:", error);
+    return [];
+  }
+
+  return data || [];
+};
+
+// ✅ Fetch all courses and include trainer details
+export const getAllCourses = async (): Promise<CourseWithTrainer[]> => {
+  const { data: courses, error } = await supabase
     .from("courses")
     .select("*")
     .order("created_at", { ascending: true });
@@ -30,10 +60,24 @@ export const getAllCourses = async (): Promise<Course[]> => {
     throw new Error(error.message);
   }
 
-  return data || [];
+  if (!courses?.length) return [];
+
+  // Extract unique trainer IDs
+  const trainerIds = [...new Set(courses.map((c) => c.trainer_id).filter(Boolean))] as string[];
+
+  // Fetch trainers
+  const trainers = await getTrainersByIds(trainerIds);
+
+  // Merge trainer info into each course
+  const mergedCourses = courses.map((course) => ({
+    ...course,
+    trainer: trainers.find((t) => t.id === course.trainer_id) || null,
+  }));
+
+  return mergedCourses;
 };
 
-
+// ✅ Fetch courses by trainer
 export const getCoursesByTrainer = async (trainerId: string): Promise<Course[]> => {
   const { data, error } = await supabase
     .from("courses")
@@ -49,9 +93,9 @@ export const getCoursesByTrainer = async (trainerId: string): Promise<Course[]> 
   return data || [];
 };
 
-
-export const getCoursesByCategory = async (category: string): Promise<Course[]> => {
-  const { data, error } = await supabase
+// ✅ Fetch by category and include trainer info
+export const getCoursesByCategory = async (category: string): Promise<CourseWithTrainer[]> => {
+  const { data: courses, error } = await supabase
     .from("courses")
     .select("*")
     .eq("category", category)
@@ -63,20 +107,41 @@ export const getCoursesByCategory = async (category: string): Promise<Course[]> 
     throw new Error(error.message);
   }
 
-  return data || [];
+  if (!courses?.length) return [];
+
+  const trainerIds = [...new Set(courses.map((c) => c.trainer_id).filter(Boolean))] as string[];
+  const trainers = await getTrainersByIds(trainerIds);
+
+  const mergedCourses = courses.map((course) => ({
+    ...course,
+    trainer: trainers.find((t) => t.id === course.trainer_id) || null,
+  }));
+
+  return mergedCourses;
 };
 
-export const getCourseBySlug = async (slug: string): Promise<Course | null> => {
-  const { data, error } = await supabase
+// ✅ Fetch a single course (you can include trainer too)
+export const getCourseBySlug = async (slug: string): Promise<CourseWithTrainer | null> => {
+  const { data: course, error } = await supabase
     .from("courses")
     .select("*")
     .eq("slug", slug)
     .single();
 
-  if (error) {
+  if (error || !course) {
     console.error("Error fetching course by slug:", error);
     return null;
   }
 
-  return data;
+  let trainer: Trainer | null = null;
+  if (course.trainer_id) {
+    const { data } = await supabase
+      .from("users")
+      .select("id, full_name, avatar_url, bio, role")
+      .eq("id", course.trainer_id)
+      .single();
+    trainer = data || null;
+  }
+
+  return { ...course, trainer };
 };
