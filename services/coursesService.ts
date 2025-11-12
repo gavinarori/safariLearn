@@ -1,5 +1,6 @@
 import { createClient } from "@/superbase/client";
 
+// 🧩 Types
 export type Course = {
   id: string;
   trainer_id: string | null;
@@ -31,7 +32,8 @@ export type CourseWithTrainer = Course & {
 
 const supabase = createClient();
 
-// ✅ Utility to fetch trainer profiles by IDs
+
+// 🔹 Utility: Fetch multiple trainers by ID
 const getTrainersByIds = async (trainerIds: string[]): Promise<Trainer[]> => {
   if (trainerIds.length === 0) return [];
 
@@ -48,7 +50,8 @@ const getTrainersByIds = async (trainerIds: string[]): Promise<Trainer[]> => {
   return data || [];
 };
 
-// ✅ Fetch all courses and include trainer details
+
+// 🔹 Fetch all courses (with trainer details)
 export const getAllCourses = async (): Promise<CourseWithTrainer[]> => {
   const { data: courses, error } = await supabase
     .from("courses")
@@ -62,24 +65,21 @@ export const getAllCourses = async (): Promise<CourseWithTrainer[]> => {
 
   if (!courses?.length) return [];
 
-  // Extract unique trainer IDs
-  const trainerIds = [...new Set(courses.map((c) => c.trainer_id).filter(Boolean))] as string[];
-
-  // Fetch trainers
+  // Extract and fetch trainers
+  const trainerIds = [...new Set(courses.map(c => c.trainer_id).filter(Boolean))] as string[];
   const trainers = await getTrainersByIds(trainerIds);
 
-  // Merge trainer info into each course
-  const mergedCourses = courses.map((course) => ({
+  // Merge trainer info
+  return courses.map(course => ({
     ...course,
-    trainer: trainers.find((t) => t.id === course.trainer_id) || null,
+    trainer: trainers.find(t => t.id === course.trainer_id) || null,
   }));
-
-  return mergedCourses;
 };
 
-// ✅ Fetch courses by trainer
-export const getCoursesByTrainer = async (trainerId: string): Promise<Course[]> => {
-  const { data, error } = await supabase
+
+// 🔹 Fetch courses by specific trainer
+export const getCoursesByTrainer = async (trainerId: string): Promise<CourseWithTrainer[]> => {
+  const { data: courses, error } = await supabase
     .from("courses")
     .select("*")
     .eq("trainer_id", trainerId)
@@ -90,10 +90,18 @@ export const getCoursesByTrainer = async (trainerId: string): Promise<Course[]> 
     throw new Error(error.message);
   }
 
-  return data || [];
+  if (!courses?.length) return [];
+
+  const trainers = await getTrainersByIds([trainerId]);
+
+  return courses.map(course => ({
+    ...course,
+    trainer: trainers[0] || null,
+  }));
 };
 
-// ✅ Fetch by category and include trainer info
+
+// 🔹 Fetch courses by category (with trainer info)
 export const getCoursesByCategory = async (category: string): Promise<CourseWithTrainer[]> => {
   const { data: courses, error } = await supabase
     .from("courses")
@@ -109,38 +117,42 @@ export const getCoursesByCategory = async (category: string): Promise<CourseWith
 
   if (!courses?.length) return [];
 
-  const trainerIds = [...new Set(courses.map((c) => c.trainer_id).filter(Boolean))] as string[];
+  const trainerIds = [...new Set(courses.map(c => c.trainer_id).filter(Boolean))] as string[];
   const trainers = await getTrainersByIds(trainerIds);
 
-  const mergedCourses = courses.map((course) => ({
+  return courses.map(course => ({
     ...course,
-    trainer: trainers.find((t) => t.id === course.trainer_id) || null,
+    trainer: trainers.find(t => t.id === course.trainer_id) || null,
   }));
-
-  return mergedCourses;
 };
 
-// ✅ Fetch a single course (you can include trainer too)
-export const getCourseBySlug = async (slug: string): Promise<CourseWithTrainer | null> => {
+
+// 🔹 Fetch a single course by ID (with trainer info)
+export const getCourseById = async (id: string): Promise<CourseWithTrainer | null> => {
   const { data: course, error } = await supabase
     .from("courses")
     .select("*")
-    .eq("slug", slug)
+    .eq("id", id)
     .single();
 
   if (error || !course) {
-    console.error("Error fetching course by slug:", error);
+    console.error("Error fetching course by ID:", error);
     return null;
   }
 
   let trainer: Trainer | null = null;
   if (course.trainer_id) {
-    const { data } = await supabase
+    const { data: trainerData, error: trainerError } = await supabase
       .from("users")
       .select("id, full_name, avatar_url, bio, role")
       .eq("id", course.trainer_id)
       .single();
-    trainer = data || null;
+
+    if (trainerError) {
+      console.error("Error fetching trainer:", trainerError);
+    } else {
+      trainer = trainerData || null;
+    }
   }
 
   return { ...course, trainer };

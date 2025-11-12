@@ -18,6 +18,8 @@ import {
 } from "@/services/coursesService";
 import { HeroVideoDialog } from "./ui/hero-video-dialog";
 import Image from "next/image";
+import Link from "next/link";
+
 
 // 🕒 Helper to show "x time ago"
 const timeAgo = (dateString: string): string => {
@@ -192,9 +194,16 @@ export function CourseDiscovery() {
                     <span className="font-bold">
                       {course.price ? `$${course.price}` : "Free"}
                     </span>
-                    <Button size="sm" className="gap-2">
+                    <Link
+  href={`/courses/${course.id}`}
+  key={course.id}
+  className="block overflow-hidden hover:shadow-lg transition-shadow group rounded-xl"
+>
+  <Button size="sm" className="gap-2">
                       Enroll Now
                     </Button>
+</Link>
+                    
                   </div>
                 </div>
               </div>
