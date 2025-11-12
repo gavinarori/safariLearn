@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { getCourseById, CourseWithTrainer } from "@/services/coursesService"
+import { createEnrollment, getEnrollment } from "@/services/enrollmentServices"
+import { createClient } from "@/superbase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,28 +13,35 @@ import { Heart, Share2, Star, Users, Clock, Loader2 } from "lucide-react"
 
 export default function CourseDetailsPage() {
   const { id } = useParams() as { id: string }
+  const supabase = createClient()
   const [course, setCourse] = useState<CourseWithTrainer | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
 
-  // 🔹 Fetch course details
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        setLoading(true)
-        const data = await getCourseById(id)
-        setCourse(data)
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch course")
-      } finally {
-        setLoading(false)
-      }
-    }
+useEffect(() => {
+  const fetchCourse = async () => {
+    try {
+      setLoading(true)
+      const data = await getCourseById(id)
+      setCourse(data)
 
-    if (id) fetchCourse()
-  }, [id])
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const enrollment = await getEnrollment(id, user.id)
+        if (enrollment) setIsEnrolled(true)
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch course")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (id) fetchCourse()
+}, [id])
+
 
   if (loading)
     return (
@@ -99,9 +108,47 @@ export default function CourseDetailsPage() {
                     <div className="text-3xl font-bold mb-6">${course.price}</div>
                   )}
 
-                  <Button size="lg" className="w-full mb-3" onClick={() => setIsEnrolled(!isEnrolled)}>
-                    {isEnrolled ? "Go to Course" : "Enroll Now"}
-                  </Button>
+                  <Button
+  size="lg"
+  className="w-full mb-3"
+  disabled={loading}
+  onClick={async () => {
+    try {
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        alert("Please log in to enroll.")
+        return
+      }
+
+      // Check if already enrolled
+      const existing = await getEnrollment(id, user.id)
+      if (existing) {
+        setIsEnrolled(true)
+        alert("You're already enrolled in this course.")
+        return
+      }
+
+      // Create new enrollment
+      const newEnrollment = await createEnrollment(id, user.id)
+      if (newEnrollment) {
+        setIsEnrolled(true)
+        alert("Enrollment successful! 🎉")
+      } else {
+        alert("Failed to enroll. Please try again.")
+      }
+    } catch (error) {
+      console.error("Enrollment error:", error)
+      alert("Something went wrong.")
+    } finally {
+      setLoading(false)
+    }
+  }}
+>
+  {isEnrolled ? "Go to Course" : loading ? "Enrolling..." : "Enroll Now"}
+</Button>
+
 
                   <Button
                     variant="outline"
