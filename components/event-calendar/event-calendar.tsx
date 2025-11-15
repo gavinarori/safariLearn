@@ -285,7 +285,7 @@ export function EventCalendar({
               <SidebarTrigger
                 data-state={open ? "invisible" : "visible"}
                 className="peer size-7 text-muted-foreground/80 hover:text-foreground/80 hover:bg-transparent! sm:-ms-1.5 lg:data-[state=invisible]:opacity-0 lg:data-[state=invisible]:pointer-events-none transition-opacity ease-in-out duration-200"
-                isOutsideSidebar
+                
               />
               <h2 className="font-semibold text-xl lg:peer-data-[state=invisible]:-translate-x-7.5 transition-transform ease-in-out duration-300">
                 {viewTitle}

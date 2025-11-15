@@ -7,19 +7,12 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui
 
 export function NavMain({
   items,
-}: {
-  items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-    isActive?: boolean
-  }[]
-}) {
+}:any) {
   const pathname = usePathname()
 
   return (
     <SidebarMenu>
-      {items.map((item) => (
+      {items.map((item:any) => (
         <SidebarMenuItem key={item.title}>
           <SidebarMenuButton asChild isActive={pathname === item.url}>
             <a href={item.url}>

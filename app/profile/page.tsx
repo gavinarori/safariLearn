@@ -78,9 +78,7 @@ export default function ProfilePage() {
     setTimeout(() => setSaveSuccess(false), 3000)
   }
 
-  const handlePreferenceChange = (key: string) => {
-    setPreferences((prev) => ({ ...prev, [key]: !prev[key] }))
-  }
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -383,7 +381,7 @@ export default function ProfilePage() {
                     <input
                       type="checkbox"
                       checked={preferences[pref.key as keyof typeof preferences]}
-                      onChange={() => handlePreferenceChange(pref.key)}
+                      
                       className="w-5 h-5 cursor-pointer"
                     />
                   </div>
