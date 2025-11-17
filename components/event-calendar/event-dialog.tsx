@@ -48,12 +48,12 @@ import { useAuth } from "@/contexts/auth";
 
 
 interface EventDialogProps {
-  event: CalendarEvent | null;
+  event: any| null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (event: CalendarEvent) => void;
   onDelete: (eventId: string) => void;
-  courseId:string;
+  courseId:any;
 }
 
 export function EventDialog({
@@ -180,7 +180,7 @@ const handleSave = () => {
   // CREATE
   if (!event?.id) {
     createCalendarEvent(payload)
-      .then((dbEvent) => {
+      .then((dbEvent:any) => {
         onSave(dbEvent);
         onClose();
       })
@@ -190,7 +190,7 @@ const handleSave = () => {
   // UPDATE
   else {
     updateCalendarEvent(event.id, payload)
-      .then((dbEvent) => {
+      .then((dbEvent:any) => {
         onSave(dbEvent);
         onClose();
       })

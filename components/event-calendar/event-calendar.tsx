@@ -48,7 +48,7 @@ import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 
 
 export interface EventCalendarProps {
-  events?: CalendarEvent[];
+  events?: any;
   onEventAdd?: any;
   onEventUpdate?: any;
   onEventDelete?: any;
@@ -65,7 +65,7 @@ export function EventCalendar({
   onEventUpdate,
   onEventDelete,
   className,
-  initialView = "month",
+  initialView = "day",
 }: EventCalendarProps) {
   // Use the shared calendar context instead of local state
   const { currentDate, setCurrentDate } = useCalendarContext();
@@ -204,7 +204,7 @@ const handleEventSave = (event: CalendarEvent) => {
 
 
   const handleEventDelete = (eventId: string) => {
-    const deletedEvent = events.find((e) => e.id === eventId);
+    const deletedEvent = events.find((e: { id: string; }) => e.id === eventId);
     onEventDelete?.(eventId);
     setIsEventDialogOpen(false);
     setSelectedEvent(null);
@@ -270,7 +270,7 @@ const handleEventSave = (event: CalendarEvent) => {
 
   return (
     <div
-      className="flex has-data-[slot=month-view]:flex-1 flex-col rounded-lg"
+      className="flex has-data-[slot=month-view]:flex-1 flex-col rounded-lg border "
       style={
         {
           "--event-height": `${EventHeight}px`,
@@ -371,39 +371,62 @@ const handleEventSave = (event: CalendarEvent) => {
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col">
-          {view === "month" && (
-            <MonthView
-              currentDate={currentDate}
-              events={events}
-              onEventSelect={handleEventSelect}
-              onEventCreate={handleEventCreate}
-            />
-          )}
-          {view === "week" && (
-            <WeekView
-              currentDate={currentDate}
-              events={events}
-              onEventSelect={handleEventSelect}
-              onEventCreate={handleEventCreate}
-            />
-          )}
-          {view === "day" && (
-            <DayView
-              currentDate={currentDate}
-              events={events}
-              onEventSelect={handleEventSelect}
-              onEventCreate={handleEventCreate}
-            />
-          )}
-          {view === "agenda" && (
-            <AgendaView
-              currentDate={currentDate}
-              events={events}
-              onEventSelect={handleEventSelect}
-            />
-          )}
-        </div>
+       <div className="flex flex-1 flex-col">
+  {events.length === 0 ? (
+    <div className="flex flex-col items-center justify-center h-full p-10 bg-muted rounded-lg border border-dashed border-muted/50 text-center gap-4">
+      <div className="text-2xl font-semibold text-muted-foreground">
+        No events scheduled
+      </div>
+      <p className="text-sm text-muted-foreground/80">
+        Your course calendar is empty. Click below or on any day to create schedules for your course.
+      </p>
+      <Button
+        size="lg"
+        onClick={() => {
+          const startTime = new Date();
+          handleEventCreate(startTime); 
+        }}
+      >
+        Create First Event
+      </Button>
+    </div>
+  ) : (
+    <>
+      {view === "month" && (
+        <MonthView
+          currentDate={currentDate}
+          events={events}
+          onEventSelect={handleEventSelect}
+          onEventCreate={handleEventCreate}
+        />
+      )}
+      {view === "week" && (
+        <WeekView
+          currentDate={currentDate}
+          events={events}
+          onEventSelect={handleEventSelect}
+          onEventCreate={handleEventCreate}
+        />
+      )}
+      {view === "day" && (
+        <DayView
+          currentDate={currentDate}
+          events={events}
+          onEventSelect={handleEventSelect}
+          onEventCreate={handleEventCreate}
+        />
+      )}
+      {view === "agenda" && (
+        <AgendaView
+          currentDate={currentDate}
+          events={events}
+          onEventSelect={handleEventSelect}
+        />
+      )}
+    </>
+  )}
+</div>
+
 
         <EventDialog
           event={selectedEvent}
