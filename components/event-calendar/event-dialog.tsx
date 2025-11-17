@@ -39,6 +39,13 @@ import {
   DefaultStartHour,
   DefaultEndHour,
 } from "@/components/event-calendar/constants";
+import {
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
+} from "@/services/calendarService";
+import { useAuth } from "@/contexts/auth"; 
+
 
 interface EventDialogProps {
   event: CalendarEvent | null;
@@ -46,6 +53,7 @@ interface EventDialogProps {
   onClose: () => void;
   onSave: (event: CalendarEvent) => void;
   onDelete: (eventId: string) => void;
+  courseId:string;
 }
 
 export function EventDialog({
@@ -54,6 +62,7 @@ export function EventDialog({
   onClose,
   onSave,
   onDelete,
+  courseId,
 }: EventDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -67,6 +76,8 @@ export function EventDialog({
   const [error, setError] = useState<string | null>(null);
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
+
+
 
   // Debug log to check what event is being passed
   useEffect(() => {
@@ -93,6 +104,10 @@ export function EventDialog({
       resetForm();
     }
   }, [event]);
+
+    const { user, signOut } = useAuth(); 
+  
+    if (!user) return null; 
 
   const resetForm = () => {
     setTitle("");
@@ -130,61 +145,71 @@ export function EventDialog({
     return options;
   }, []); // Empty dependency array ensures this only runs once
 
-  const handleSave = () => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+const handleSave = () => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
-    if (!allDay) {
-      const [startHours = 0, startMinutes = 0] = startTime
-        .split(":")
-        .map(Number);
-      const [endHours = 0, endMinutes = 0] = endTime.split(":").map(Number);
+  if (!allDay) {
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
 
-      if (
-        startHours < StartHour ||
-        startHours > EndHour ||
-        endHours < StartHour ||
-        endHours > EndHour
-      ) {
-        setError(
-          `Selected time must be between ${StartHour}:00 and ${EndHour}:00`,
-        );
-        return;
-      }
+    start.setHours(sh, sm, 0);
+    end.setHours(eh, em, 0);
+  } else {
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+  }
 
-      start.setHours(startHours, startMinutes, 0);
-      end.setHours(endHours, endMinutes, 0);
-    } else {
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-    }
+  if (isBefore(end, start)) {
+    setError("End date cannot be before start date");
+    return;
+  }
 
-    // Validate that end date is not before start date
-    if (isBefore(end, start)) {
-      setError("End date cannot be before start date");
-      return;
-    }
+  const titleValue = title.trim() ? title : "(no title)";
 
-    // Use generic title if empty
-    const eventTitle = title.trim() ? title : "(no title)";
+  const payload = {
+  title: titleValue,
+  description,
+  start_time: start.toISOString(),
+  end_time: end.toISOString(),
+  color,
+  course_id: event?.course_id ?? courseId ?? "", // must exist
+  user_id: user.id ?? "",     // must exist
+};
 
-    onSave({
-      id: event?.id || "",
-      title: eventTitle,
-      description,
-      start,
-      end,
-      allDay,
-      location,
-      color,
-    });
-  };
+  // CREATE
+  if (!event?.id) {
+    createCalendarEvent(payload)
+      .then((dbEvent) => {
+        onSave(dbEvent);
+        onClose();
+      })
+      .catch((err) => setError(err.message));
+  }
 
-  const handleDelete = () => {
-    if (event?.id) {
+  // UPDATE
+  else {
+    updateCalendarEvent(event.id, payload)
+      .then((dbEvent) => {
+        onSave(dbEvent);
+        onClose();
+      })
+      .catch((err) => setError(err.message));
+  }
+};
+
+const handleDelete = () => {
+  if (!event?.id) return;
+
+  deleteCalendarEvent(event.id)
+    .then(() => {
       onDelete(event.id);
-    }
-  };
+      onClose();
+    })
+    .catch((err) => setError(err.message));
+};
+
+
 
   // Updated color options to match types.ts
   const colorOptions: Array<{

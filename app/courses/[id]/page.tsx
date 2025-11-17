@@ -11,6 +11,11 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Heart, Share2, Star, Clock, Loader2 } from "lucide-react"
 
+// Calendar import
+import { EventCalendar } from "@/components/event-calendar/event-calendar"
+import { CalendarEvent, getFullCalendarForUser, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/services/calendarService"
+import { SidebarProvider } from "@/components/ui/sidebar";
+
 export default function CourseDetailsPage() {
   const { id } = useParams() as { id: string }
   const router = useRouter()
@@ -22,47 +27,67 @@ export default function CourseDetailsPage() {
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
   const [buttonLoading, setButtonLoading] = useState(false)
+  const [events, setEvents] = useState<CalendarEvent[]>([])
 
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        setLoading(true)
-        const data = await getCourseById(id)
-        setCourse(data)
+useEffect(() => {
+  const fetchCourse = async () => {
+    try {
+      setLoading(true)
+      const data = await getCourseById(id)
+      setCourse(data)
 
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const enrollment = await getEnrollment(id, user.id)
-          if (enrollment) setIsEnrolled(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const enrollment = await getEnrollment(id, user.id)
+        if (enrollment) setIsEnrolled(true)
+
+        if (enrollment) {
+          // Fetch calendar events only if enrolled
+          const userEvents = await getFullCalendarForUser(id, user.id)
+
+          // Map API events to CalendarEvent format
+          const mappedEvents: CalendarEvent[] = userEvents.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description,
+            start: new Date(e.start_time),
+            end: new Date(e.end_time),
+            allDay: e.all_day ?? false,
+            color: e.color ?? "blue",
+            course_id: e.course_id,
+            user_id: e.user_id,
+            location: e.location ?? "",
+          }))
+
+          setEvents(mappedEvents)
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch course")
-      } finally {
-        setLoading(false)
       }
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch course")
+    } finally {
+      setLoading(false)
     }
+  }
 
-    if (id) fetchCourse()
-  }, [id])
+  if (id) fetchCourse()
+}, [id])
 
 
+  // Enroll button handler
   const handleEnroll = async () => {
     try {
       setButtonLoading(true)
-
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         alert("Please log in to continue.")
         return
       }
 
-      // Already enrolled → go to player
       if (isEnrolled) {
         router.push(`/learn/${id}`)
         return
       }
 
-      // Auto-enroll free course
       if (course?.price === 0 || course?.price === null) {
         const result = await createEnrollment(id, user.id)
         if (result) {
@@ -72,7 +97,6 @@ export default function CourseDetailsPage() {
         return
       }
 
-      // PAID course → Require enrollment first
       const created = await createEnrollment(id, user.id)
       if (!created) {
         alert("Failed to enroll. Please try again.")
@@ -81,7 +105,6 @@ export default function CourseDetailsPage() {
 
       setIsEnrolled(true)
       router.push(`/learn/${id}`)
-
     } catch (err) {
       console.error(err)
       alert("Something went wrong.")
@@ -90,7 +113,51 @@ export default function CourseDetailsPage() {
     }
   }
 
+ 
+const handleEventAdd = async (event: CalendarEvent) => {
+  if (!id) {
+    alert("Course ID not available. Cannot add event.");
+    return;
+  }
 
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not found");
+
+    const newEvent = await createCalendarEvent({
+      ...event,
+      course_id: id,
+      user_id: user.id,
+    });
+
+    setEvents(prev => [...prev, newEvent]);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to add event");
+  }
+};
+
+
+  const handleEventUpdate = async (event: CalendarEvent) => {
+    try {
+      if (!event.id) return
+      const updated = await updateCalendarEvent(event.id, event)
+      setEvents(prev => prev.map(e => (e.id === updated.id ? updated : e)))
+    } catch (err) {
+      console.error(err)
+      alert("Failed to update event")
+    }
+  }
+
+  const handleEventDelete = async (eventId: string) => {
+    try {
+      await deleteCalendarEvent(eventId)
+      setEvents(prev => prev.filter(e => e.id !== eventId))
+    } catch (err) {
+      console.error(err)
+      alert("Failed to delete event")
+    }
+  }
 
   if (loading)
     return (
@@ -115,7 +182,7 @@ export default function CourseDetailsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-primary/10 to-accent/10 pb-12">
+      <div className="relative pb-12">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -138,14 +205,27 @@ export default function CourseDetailsPage() {
                   </div>
                 )}
 
-                {/* Price */}
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">
-                    {isFree ? "Free" : `$${course.price?.toFixed(2)}`}
-                  </span>
+                  <span className="font-semibold">{isFree ? "Free" : `$${course.price?.toFixed(2)}`}</span>
                 </div>
               </div>
+
+              {/* Show calendar only if enrolled */}
+              {isEnrolled && (
+                <div className="mb-12">
+                  <SidebarProvider>
+                    <EventCalendar
+  courseId={id}
+  events={events}
+  onEventAdd={handleEventAdd}
+  onEventUpdate={handleEventUpdate}
+  onEventDelete={handleEventDelete}
+  initialView="week"
+/>
+                  </SidebarProvider>
+                </div>
+              )}
             </div>
 
             {/* Sidebar Card */}
@@ -161,28 +241,13 @@ export default function CourseDetailsPage() {
                     />
                   </div>
 
-                  {/* Price */}
-                  <div className="text-3xl font-bold mb-6">
-                    {isFree ? "Free" : `$${course.price}`}
-                  </div>
+                  <div className="text-3xl font-bold mb-6">{isFree ? "Free" : `$${course.price}`}</div>
 
-                  {/* Enroll Button */}
-                  <Button
-                    size="lg"
-                    className="w-full mb-3"
-                    disabled={buttonLoading}
-                    onClick={handleEnroll}
-                  >
+                  <Button size="lg" className="w-full mb-3" disabled={buttonLoading} onClick={handleEnroll}>
                     {buttonLoading ? "Please wait..." : buttonLabel}
                   </Button>
 
-                  {/* Favorite Button */}
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full bg-transparent"
-                    onClick={() => setIsFavorited(!isFavorited)}
-                  >
+                  <Button variant="outline" size="lg" className="w-full bg-transparent" onClick={() => setIsFavorited(!isFavorited)}>
                     <Heart className={`w-4 h-4 mr-2 ${isFavorited ? "fill-current" : ""}`} />
                     {isFavorited ? "Favorited" : "Add to Favorites"}
                   </Button>
@@ -202,11 +267,9 @@ export default function CourseDetailsPage() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-12">
-        {/* Trainer + More Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
 
-            {/* Instructor Section */}
             {course.trainer && (
               <Card className="mb-8">
                 <CardHeader>
@@ -216,11 +279,8 @@ export default function CourseDetailsPage() {
                   <div className="flex gap-6">
                     <Avatar className="w-20 h-20 flex-shrink-0">
                       <AvatarImage src={course.trainer.avatar_url || "/placeholder.svg"} />
-                      <AvatarFallback>
-                        {course.trainer.full_name?.charAt(0).toUpperCase() || "T"}
-                      </AvatarFallback>
+                      <AvatarFallback>{course.trainer.full_name?.charAt(0).toUpperCase() || "T"}</AvatarFallback>
                     </Avatar>
-
                     <div className="flex-1">
                       <h3 className="text-xl font-bold mb-1">{course.trainer.full_name}</h3>
                       <p className="text-muted-foreground mb-4">{course.trainer.bio}</p>
@@ -242,7 +302,6 @@ export default function CourseDetailsPage() {
             </Card>
           </div>
 
-          {/* Sidebar Reviews */}
           <div>
             <Card>
               <CardHeader>

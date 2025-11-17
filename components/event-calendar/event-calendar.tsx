@@ -46,17 +46,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 
+
 export interface EventCalendarProps {
   events?: CalendarEvent[];
-  onEventAdd?: (event: CalendarEvent) => void;
-  onEventUpdate?: (event: CalendarEvent) => void;
-  onEventDelete?: (eventId: string) => void;
+  onEventAdd?: any;
+  onEventUpdate?: any;
+  onEventDelete?: any;
   className?: string;
   initialView?: CalendarView;
+  courseId?: string; // <--- new
 }
 
+
 export function EventCalendar({
-  events = [],
+  courseId,
+  events ,
   onEventAdd,
   onEventUpdate,
   onEventDelete,
@@ -174,28 +178,30 @@ export function EventCalendar({
     setIsEventDialogOpen(true);
   };
 
-  const handleEventSave = (event: CalendarEvent) => {
-    if (event.id) {
-      onEventUpdate?.(event);
-      // Show toast notification when an event is updated
-      toast(`Event "${event.title}" updated`, {
-        description: format(new Date(event.start), "MMM d, yyyy"),
-        position: "bottom-left",
-      });
-    } else {
-      onEventAdd?.({
-        ...event,
-        id: Math.random().toString(36).substring(2, 11),
-      });
-      // Show toast notification when an event is added
-      toast(`Event "${event.title}" added`, {
-        description: format(new Date(event.start), "MMM d, yyyy"),
-        position: "bottom-left",
-      });
-    }
-    setIsEventDialogOpen(false);
-    setSelectedEvent(null);
-  };
+const handleEventSave = (event: CalendarEvent) => {
+  const eventWithCourse = courseId ? { ...event, course_id: courseId } : event;
+
+  if (event.id) {
+    onEventUpdate?.(eventWithCourse);
+    toast(`Event "${event.title}" updated`, {
+      description: format(new Date(event.start), "MMM d, yyyy"),
+      position: "bottom-left",
+    });
+  } else {
+    onEventAdd?.({
+      ...eventWithCourse,
+      id: Math.random().toString(36).substring(2, 11),
+    });
+    toast(`Event "${event.title}" added`, {
+      description: format(new Date(event.start), "MMM d, yyyy"),
+      position: "bottom-left",
+    });
+  }
+
+  setIsEventDialogOpen(false);
+  setSelectedEvent(null);
+};
+
 
   const handleEventDelete = (eventId: string) => {
     const deletedEvent = events.find((e) => e.id === eventId);
@@ -408,6 +414,7 @@ export function EventCalendar({
           }}
           onSave={handleEventSave}
           onDelete={handleEventDelete}
+          courseId={courseId}
         />
       </CalendarDndProvider>
     </div>
