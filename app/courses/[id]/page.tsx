@@ -46,7 +46,7 @@ useEffect(() => {
           const userEvents = await getFullCalendarForUser(id, user.id)
 
           // Map API events to CalendarEvent format
-          const mappedEvents: CalendarEvent[] = userEvents.map((e: any) => ({
+          const mappedEvents: any = userEvents.map((e: any) => ({
             id: e.id,
             title: e.title,
             description: e.description,
@@ -213,7 +213,7 @@ const handleEventAdd = async (event: CalendarEvent) => {
 
               {/* Show calendar only if enrolled */}
               {isEnrolled && (
-                <div className="mb-12">
+                <div className="mb-10">
                   <SidebarProvider>
                     <EventCalendar
   courseId={id}
@@ -221,7 +221,7 @@ const handleEventAdd = async (event: CalendarEvent) => {
   onEventAdd={handleEventAdd}
   onEventUpdate={handleEventUpdate}
   onEventDelete={handleEventDelete}
-  initialView="week"
+  initialView="day"
 />
                   </SidebarProvider>
                 </div>
