@@ -84,6 +84,12 @@ export function EventDialog({
     console.log("EventDialog received event:", event);
   }, [event]);
 
+    const formatTimeForInput = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = Math.floor(date.getMinutes() / 15) * 15;
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
+  };
+
   useEffect(() => {
     if (event) {
       setTitle(event.title || "");
@@ -96,8 +102,6 @@ export function EventDialog({
       setEndDate(end);
       setStartTime(formatTimeForInput(start));
       setEndTime(formatTimeForInput(end));
-      setAllDay(event.allDay || false);
-      setLocation(event.location || "");
       setColor((event.color as EventColor) || "sky");
       setError(null); // Reset error when opening dialog
     } else {
@@ -116,17 +120,11 @@ export function EventDialog({
     setEndDate(new Date());
     setStartTime(`${DefaultStartHour}:00`);
     setEndTime(`${DefaultEndHour}:00`);
-    setAllDay(false);
-    setLocation("");
     setColor("blue");
     setError(null);
   };
 
-  const formatTimeForInput = (date: Date) => {
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = Math.floor(date.getMinutes() / 15) * 15;
-    return `${hours}:${minutes.toString().padStart(2, "0")}`;
-  };
+
 
   // Memoize time options so they're only calculated once
   const timeOptions = useMemo(() => {
@@ -428,14 +426,6 @@ const handleDelete = () => {
             <Label htmlFor="all-day">All day</Label>
           </div>
 
-          <div className="*:not-first:mt-1.5">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-          </div>
           <fieldset className="space-y-4">
             <legend className="text-foreground text-sm leading-none font-medium">
               Etiquette
