@@ -222,14 +222,205 @@ export default function CoursePlayerPage() {
             </BreadcrumbList>
           </Breadcrumb>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          {Array.from({ length: 24 }).map((_, index) => (
-            <div
-              key={index}
-              className="bg-muted/50 aspect-video h-12 w-full rounded-lg"
-            />
-          ))}
+        <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto p-4 lg:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Video Player Area */}
+          <div className="lg:col-span-3">
+            {/* Video Player */}
+            <Card className="mb-6 overflow-hidden">
+              <div className="aspect-video bg-black flex items-center justify-center relative">
+                {currentLesson?.video_url ? (
+                  // use native video player when a real mp4 url exists
+                  <video src={currentLesson.video_url || ""} controls className="w-full h-full object-cover" />
+                ) : (
+                  <img
+                    src={"/placeholder.svg"}
+                    alt="Video player"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <Button
+                  size="lg"
+                  className="absolute inset-0 m-auto w-fit h-fit opacity-0 hover:opacity-100 transition-opacity"
+                >
+                  <Play className="w-6 h-6" />
+                </Button>
+              </div>
+              <CardContent className="p-6">
+                <div className="mb-4">
+                  <Badge className="mb-2">
+                    Week {currentLesson?.week} • Lesson {currentLesson?.number}
+                  </Badge>
+                  <h1 className="text-2xl font-bold">{currentLesson?.title}</h1>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <Button
+                    onClick={() => currentLesson && toggleLessonComplete(currentLesson.id)}
+                    variant={currentLesson && currentLesson.completed ? "default" : "outline"}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    {currentLesson && currentLesson.completed ? "Completed" : "Mark as Complete"}
+                  </Button>
+
+                  <Button variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Materials
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabs for Details */}
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="materials">Materials</TabsTrigger>
+                <TabsTrigger value="notes">My Notes</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="mt-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Lesson Overview</h3>
+                    <p className="text-muted-foreground mb-6">{currentLesson?.content ?? "No description available."}</p>
+                    <div>
+                      <h4 className="font-semibold mb-3">Key Topics:</h4>
+                      <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                        <li>Progressive overload principle</li>
+                        <li>Mechanical tension and muscle damage</li>
+                        <li>Rest periods and recovery</li>
+                        <li>Volume and intensity concepts</li>
+                        <li>Program structure guidelines</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="materials" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Downloadable Materials</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* This example uses placeholders; replace with real materials when available */}
+                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors mb-2">
+                      <div>
+                        <p className="font-semibold">Week {currentLesson?.week} - Worksheet</p>
+                        <p className="text-sm text-muted-foreground">PDF • 1.2 MB</p>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="notes" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>My Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      placeholder="Add your notes here..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="min-h-32 mb-4"
+                    />
+                    <Button onClick={() => alert("Notes saved locally (demo).")}>Save Notes</Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+
+            {/* Q&A Section */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Questions & Answers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
+                  <Textarea placeholder="Ask a question about this lesson..." className="min-h-20 mb-3" />
+                  <Button>Post Question</Button>
+                </div>
+
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="pb-4 border-b last:border-b-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-semibold">{comment.author}</p>
+                          <p className="text-xs text-muted-foreground">{comment.time}</p>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground mb-3">{comment.text}</p>
+                      <Button variant="ghost" size="sm">
+                        Reply ({comment.replies})
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar - Lessons List */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+              <CardHeader>
+                <CardTitle>Curriculum</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {weeks.map((week) => (
+                  <div key={week}>
+                    <button
+                      onClick={() =>
+                        setExpandedWeeks((prev) => ({
+                          ...prev,
+                          [week]: !prev[week],
+                        }))
+                      }
+                      className="flex justify-between items-center w-full p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors mb-2 font-semibold text-sm"
+                    >
+                      <span>Week {week}</span>
+                      {expandedWeeks[week] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+
+                    {expandedWeeks[week] && (
+                      <div className="space-y-1 ml-2 mb-4">
+                        {groupedLessons[week].map((lesson) => (
+                          <button
+                            key={lesson.id}
+                            onClick={() => handleSelectLesson(lesson)}
+                            className={`block w-full text-left p-2 rounded transition-colors text-sm ${
+                              currentLesson?.id === lesson.id ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
+                            }`}
+                          >
+                            <div className="flex gap-2 items-start">
+                              <div className="flex-1">
+                                <p className="font-medium leading-tight">{lesson.title}</p>
+                                <p className="text-xs opacity-70">{lesson.duration}</p>
+                              </div>
+                              {completedLessons[lesson.id] && <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-1" />}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </div>
+      </div>
+    </div>
       </SidebarInset>
     </SidebarProvider>
   )
