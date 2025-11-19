@@ -15,6 +15,21 @@ import {
   ChevronUp,
   Play,
 } from "lucide-react"
+import { AppSidebar } from "@/components/learn-components/app-sidebar"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Separator } from "@/components/ui/separator"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
 import { LessonsService } from "@/services/lessonsService"
 
 type LessonRow = {
@@ -180,7 +195,34 @@ export default function CoursePlayerPage() {
     )
 
   return (
-    <div className="min-h-screen bg-background">
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "350px",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar />
+      <SidebarInset>
+        <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-[orientation=vertical]:h-4"
+          />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="#">All Inboxes</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Inbox</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </header>
+        <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Video Player Area */}
@@ -379,6 +421,8 @@ export default function CoursePlayerPage() {
         </div>
       </div>
     </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
 

@@ -172,7 +172,7 @@ export function EventCalendar({
       title: "",
       start: startTime,
       end: addHoursToDate(startTime, 1),
-      allDay: false,
+
     };
     setSelectedEvent(newEvent);
     setIsEventDialogOpen(true);
@@ -218,15 +218,22 @@ const handleEventSave = (event: CalendarEvent) => {
     }
   };
 
-  const handleEventUpdate = (updatedEvent: CalendarEvent) => {
-    onEventUpdate?.(updatedEvent);
-
-    // Show toast notification when an event is updated via drag and drop
-    toast(`Event "${updatedEvent.title}" moved`, {
-      description: format(new Date(updatedEvent.start), "MMM d, yyyy"),
-      position: "bottom-left",
-    });
+const handleEventUpdate = (updatedEvent: CalendarEvent) => {
+  // Strip unwanted fields
+  const sanitized = {
+    ...updatedEvent,
+    allDay: undefined,
+    location: undefined,
   };
+
+  onEventUpdate?.(sanitized);
+
+  toast(`Event "${updatedEvent.title}" moved`, {
+    description: format(new Date(updatedEvent.start), "MMM d, yyyy"),
+    position: "bottom-left",
+  });
+};
+
 
   const viewTitle = useMemo(() => {
     if (view === "month") {

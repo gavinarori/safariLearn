@@ -11,10 +11,18 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Heart, Share2, Star, Clock, Loader2 } from "lucide-react"
 
-// Calendar import
+
 import { EventCalendar } from "@/components/event-calendar/event-calendar"
-import { CalendarEvent, getFullCalendarForUser, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/services/calendarService"
-import { SidebarProvider } from "@/components/ui/sidebar";
+import {
+  CalendarEvent,
+  getFullCalendarForUser,
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
+} from "@/services/calendarService"
+
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { toast } from "sonner"
 
 export default function CourseDetailsPage() {
   const { id } = useParams() as { id: string }
@@ -29,55 +37,101 @@ export default function CourseDetailsPage() {
   const [buttonLoading, setButtonLoading] = useState(false)
   const [events, setEvents] = useState<CalendarEvent[]>([])
 
-useEffect(() => {
-  const fetchCourse = async () => {
-    try {
-      setLoading(true)
-      const data = await getCourseById(id)
-      setCourse(data)
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const enrollment = await getEnrollment(id, user.id)
-        if (enrollment) setIsEnrolled(true)
+  useEffect(() => {
+    const fetchCourse = async () => {
+      try {
+        setLoading(true)
+        const data = await getCourseById(id)
+        setCourse(data)
 
-        if (enrollment) {
-          // Fetch calendar events only if enrolled
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (user) {
+          const enrollment = await getEnrollment(id, user.id)
+          if (enrollment) setIsEnrolled(true)
+
+          if (enrollment) {
+            const userEvents = await getFullCalendarForUser(id, user.id)
+
+            const mappedEvents: CalendarEvent[] = userEvents.map((e: any) => ({
+              id: e.id,
+              title: e.title,
+              description: e.description,
+              start_time: e.start_time,
+              end_time: e.end_time,
+              start: new Date(e.start_time),
+              end: new Date(e.end_time),
+              color: e.color ?? "blue",
+              course_id: e.course_id,
+              user_id: e.user_id,
+            }))
+
+            setEvents(mappedEvents)
+          }
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch course")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (id) fetchCourse()
+  }, [id])
+
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("course-events-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "course_events",
+          filter: `course_id=eq.${id}`,
+        },
+        async (payload) => {
+          console.log("Realtime change:", payload)
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
+          if (!user) return
+
           const userEvents = await getFullCalendarForUser(id, user.id)
 
-          // Map API events to CalendarEvent format
-          const mappedEvents: any = userEvents.map((e: any) => ({
+          const mapped: CalendarEvent[] = userEvents.map((e: any) => ({
             id: e.id,
             title: e.title,
             description: e.description,
+            start_time: e.start_time,
+            end_time: e.end_time,
             start: new Date(e.start_time),
             end: new Date(e.end_time),
-            allDay: e.all_day ?? false,
             color: e.color ?? "blue",
             course_id: e.course_id,
             user_id: e.user_id,
-            location: e.location ?? "",
           }))
 
-          setEvents(mappedEvents)
+          setEvents(mapped)
         }
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch course")
-    } finally {
-      setLoading(false)
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
     }
-  }
-
-  if (id) fetchCourse()
-}, [id])
+  }, [id])
 
 
-  // Enroll button handler
   const handleEnroll = async () => {
     try {
       setButtonLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         alert("Please log in to continue.")
         return
@@ -88,18 +142,9 @@ useEffect(() => {
         return
       }
 
-      if (course?.price === 0 || course?.price === null) {
-        const result = await createEnrollment(id, user.id)
-        if (result) {
-          setIsEnrolled(true)
-          router.push(`/learn/${id}`)
-        }
-        return
-      }
-
       const created = await createEnrollment(id, user.id)
       if (!created) {
-        alert("Failed to enroll. Please try again.")
+        alert("Failed to enroll. Try again.")
         return
       }
 
@@ -113,51 +158,83 @@ useEffect(() => {
     }
   }
 
- 
-const handleEventAdd = async (event: CalendarEvent) => {
-  if (!id) {
-    alert("Course ID not available. Cannot add event.");
-    return;
+
+  const handleEventAdd = async (event: CalendarEvent) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) throw new Error("User not found")
+
+      const newEvent = await createCalendarEvent({
+  title: event.title,
+  description: event.description,
+  start_time: event.start.toISOString(),
+  end_time: event.end.toISOString(),
+  color: event.color,
+  course_id: id,
+  user_id: user.id,
+});
+
+
+      toast.success("Event created")
+
+      setEvents((prev) => [...prev, newEvent])
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to add event")
+    }
   }
 
+
+const handleEventUpdate = async (event: CalendarEvent) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not found");
+    if (!event.id) return;
 
-    const newEvent = await createCalendarEvent({
-      ...event,
-      course_id: id,
-      user_id: user.id,
-    });
+    // Strip allDay and location
+    const { allDay, location, ...cleanEvent } = event;
 
-    setEvents(prev => [...prev, newEvent]);
+const updated = await updateCalendarEvent(event.id, {
+  title: cleanEvent.title,
+  description: cleanEvent.description,
+  start_time: cleanEvent.start.toISOString(),
+  end_time: cleanEvent.end.toISOString(),
+  color: cleanEvent.color
+});
+
+
+    toast.success("Event updated");
+
+    setEvents((prev) =>
+      prev.map((e) =>
+        e.id === updated.id
+          ? {
+              ...updated,
+            
+            }
+          : e
+      )
+    );
   } catch (err) {
     console.error(err);
-    alert("Failed to add event");
+    toast.error("Failed to update event");
   }
 };
 
 
-  const handleEventUpdate = async (event: CalendarEvent) => {
-    try {
-      if (!event.id) return
-      const updated = await updateCalendarEvent(event.id, event)
-      setEvents(prev => prev.map(e => (e.id === updated.id ? updated : e)))
-    } catch (err) {
-      console.error(err)
-      alert("Failed to update event")
-    }
-  }
 
   const handleEventDelete = async (eventId: string) => {
     try {
       await deleteCalendarEvent(eventId)
-      setEvents(prev => prev.filter(e => e.id !== eventId))
+      toast.success("Event deleted")
+      setEvents((prev) => prev.filter((e) => e.id !== eventId))
     } catch (err) {
       console.error(err)
-      alert("Failed to delete event")
+      toast.error("Failed to delete event")
     }
   }
+
 
   if (loading)
     return (
@@ -179,24 +256,24 @@ const handleEventAdd = async (event: CalendarEvent) => {
   const isFree = course.price === 0 || course.price === null
   const buttonLabel = isEnrolled ? "Go to Course" : isFree ? "Start Learning" : "Enroll Now"
 
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="relative pb-12">
+      {/* HERO SECTION */}
+      <div className={`relative pb-12 ${!isEnrolled ? "bg-gradient-to-r from-primary/10 to-accent/10" : ""}`}>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-            {/* Main Content */}
+            {/* MAIN CONTENT */}
             <div className="lg:col-span-2">
               <div className="flex gap-3 mb-4">
                 {course.category && <Badge variant="secondary">{course.category}</Badge>}
                 {course.level && <Badge variant="outline">{course.level}</Badge>}
               </div>
 
-              <h1 className="text-4xl font-bold mb-4 text-balance">{course.title}</h1>
+              <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
               <p className="text-lg text-muted-foreground mb-6">{course.description}</p>
 
-              {/* Course Stats */}
+              {/* COURSE STATS */}
               <div className="flex flex-wrap gap-6 mb-8">
                 {course.language && (
                   <div className="flex items-center gap-2">
@@ -211,34 +288,29 @@ const handleEventAdd = async (event: CalendarEvent) => {
                 </div>
               </div>
 
-              {/* Show calendar only if enrolled */}
+              {/* CALENDAR (ONLY WHEN ENROLLED) */}
               {isEnrolled && (
                 <div className="mb-10">
                   <SidebarProvider>
                     <EventCalendar
-  courseId={id}
-  events={events}
-  onEventAdd={handleEventAdd}
-  onEventUpdate={handleEventUpdate}
-  onEventDelete={handleEventDelete}
-  initialView="day"
-/>
+                      courseId={id}
+                      events={events}
+                      onEventAdd={handleEventAdd}
+                      onEventUpdate={handleEventUpdate}
+                      onEventDelete={handleEventDelete}
+                      initialView="day"
+                    />
                   </SidebarProvider>
                 </div>
               )}
             </div>
 
-            {/* Sidebar Card */}
+            {/* SIDEBAR */}
             <div className="lg:col-span-1">
               <Card className="sticky top-4 border-2">
                 <CardContent className="p-6">
-
                   <div className="aspect-video bg-muted rounded-lg mb-6 overflow-hidden">
-                    <img
-                      src={course.thumbnail_url || "/placeholder.svg"}
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={course.thumbnail_url || "/placeholder.svg"} className="w-full h-full object-cover" />
                   </div>
 
                   <div className="text-3xl font-bold mb-6">{isFree ? "Free" : `$${course.price}`}</div>
@@ -256,20 +328,17 @@ const handleEventAdd = async (event: CalendarEvent) => {
                     <Share2 className="w-4 h-4 mr-2" />
                     Share
                   </Button>
-
                 </CardContent>
               </Card>
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* ABOUT + TRAINER */}
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-
             {course.trainer && (
               <Card className="mb-8">
                 <CardHeader>
@@ -277,13 +346,13 @@ const handleEventAdd = async (event: CalendarEvent) => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-6">
-                    <Avatar className="w-20 h-20 flex-shrink-0">
+                    <Avatar className="w-20 h-20">
                       <AvatarImage src={course.trainer.avatar_url || "/placeholder.svg"} />
-                      <AvatarFallback>{course.trainer.full_name?.charAt(0).toUpperCase() || "T"}</AvatarFallback>
+                      <AvatarFallback>{course.trainer.full_name?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
+                    <div>
                       <h3 className="text-xl font-bold mb-1">{course.trainer.full_name}</h3>
-                      <p className="text-muted-foreground mb-4">{course.trainer.bio}</p>
+                      <p className="text-muted-foreground">{course.trainer.bio}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -296,7 +365,7 @@ const handleEventAdd = async (event: CalendarEvent) => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Learn everything about {course.title}. Improve your skills step-by-step with structured lessons and expert guidance.
+                  Learn everything about {course.title} with structured lessons and expert guidance.
                 </p>
               </CardContent>
             </Card>
@@ -309,12 +378,11 @@ const handleEventAdd = async (event: CalendarEvent) => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  No reviews yet — be the first to review after enrolling!
+                  No reviews yet — be the first after enrolling!
                 </p>
               </CardContent>
             </Card>
           </div>
-
         </div>
       </div>
     </div>
