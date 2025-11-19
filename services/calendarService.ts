@@ -11,6 +11,7 @@ export interface CalendarEvent {
   user_id: string
   title: string
   description?: string
+  color?:string
   start_time: string
   end_time?: string
   updated_at?: string

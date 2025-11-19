@@ -19,6 +19,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Switch } from "@/components/ui/switch"
+import {
+  IconInnerShadowTop,
+} from "@tabler/icons-react"
 
 // This is sample data
 const data = {
@@ -169,10 +172,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
                 <a href="#">
                   <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Command className="size-4" />
+                    <IconInnerShadowTop className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">Acme Inc</span>
+                    <span className="truncate font-medium">safariLearn.</span>
                     <span className="truncate text-xs">Enterprise</span>
                   </div>
                 </a>
@@ -215,7 +218,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          <NavUser user={data.user} />
+          <NavUser  />
         </SidebarFooter>
       </Sidebar>
 
