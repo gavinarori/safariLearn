@@ -159,7 +159,7 @@ export default function CourseDetailsPage() {
   }
 
 
-  const handleEventAdd = async (event: CalendarEvent) => {
+  const handleEventAdd = async (event: any) => {
     try {
       const {
         data: { user },
@@ -188,7 +188,7 @@ export default function CourseDetailsPage() {
   }
 
 
-const handleEventUpdate = async (event: CalendarEvent) => {
+const handleEventUpdate = async (event: any) => {
   try {
     if (!event.id) return;
 
