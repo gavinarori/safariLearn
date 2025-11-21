@@ -5,25 +5,14 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import {
   CheckCircle2,
   Download,
-  MessageSquare,
   ChevronDown,
   ChevronUp,
-  Play,
+
 } from "lucide-react"
 import { AppSidebar } from "@/components/learn-components/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import {
   SidebarInset,
@@ -227,44 +216,49 @@ export default function CoursePlayerPage() {
       <div className="max-w-7xl mx-auto p-4 lg:p-6">
 <div className="space-y-6">
 
-  {/* =======================
-      TOP FULL WIDTH VIDEO
-  ========================== */}
-  <div className="w-full h-[70vh] rounded-xl overflow-hidden bg-black">
-    {currentLesson?.video_url ? (
-      <VideoPlayer className="w-full h-full">
-        <VideoPlayerContent
-          crossOrigin=""
-          muted
-          preload="auto"
-          slot="media"
-          src={currentLesson.video_url || ""}
-        />
-        <VideoPlayerControlBar>
-          <VideoPlayerPlayButton />
-          <VideoPlayerSeekBackwardButton />
-          <VideoPlayerSeekForwardButton />
-          <VideoPlayerTimeRange />
-          <VideoPlayerTimeDisplay showDuration />
-          <VideoPlayerMuteButton />
-          <VideoPlayerVolumeRange />
-        </VideoPlayerControlBar>
-      </VideoPlayer>
-    ) : (
-      <img
-        src="/placeholder.svg"
-        alt="Video player"
-        className="w-full h-full object-cover"
+<div className="
+  w-full 
+  h-56 
+  sm:h-64 
+  md:h-[45vh] 
+  lg:h-[50vh] 
+  xl:h-[60vh] 
+  2xl:h-[65vh]
+  rounded-xl 
+  overflow-hidden 
+  bg-black
+">
+  {currentLesson?.video_url ? (
+    <VideoPlayer className="w-full h-full">
+      <VideoPlayerContent
+        crossOrigin=""
+        muted
+        preload="auto"
+        slot="media"
+        src={currentLesson.video_url || ""}
       />
-    )}
-  </div>
+      <VideoPlayerControlBar>
+        <VideoPlayerPlayButton />
+        <VideoPlayerSeekBackwardButton />
+        <VideoPlayerSeekForwardButton />
+        <VideoPlayerTimeRange />
+        <VideoPlayerTimeDisplay showDuration />
+        <VideoPlayerMuteButton />
+        <VideoPlayerVolumeRange />
+      </VideoPlayerControlBar>
+    </VideoPlayer>
+  ) : (
+    <img
+      src="/placeholder.svg"
+      alt="Video player"
+      className="w-full h-full object-cover"
+    />
+  )}
+</div>
 
-  {/* ==========================
-      BELOW VIDEO: GRID SECTION
-  =========================== */}
+
   <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-    {/* LEFT SIDE: CURRICULUM */}
     <div className="lg:col-span-1">
       <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
         <CardHeader>
