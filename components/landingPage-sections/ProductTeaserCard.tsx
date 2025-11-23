@@ -18,17 +18,18 @@ type ProductTeaserCardProps = {
 // @component: ProductTeaserCard
 export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
   const {
-    dailyVolume = "1,430,992,688",
-    dailyVolumeLabel = "DAILY ANALYZED MESSAGES",
-    headline = "The Intelligence Layer for Modern Communication",
-    subheadline = "Auralink connects every call, chat, and meeting into a unified AI layer — delivering real-time insights, tone analysis, and team alignment across your favorite tools.",
-    description = "Trusted by fast-growing teams and enterprises, Auralink powers smarter communication across 1,000+ organizations — with enterprise-grade security, multilingual analysis, and instant emotional detection.",
-    videoSrc = "https://cdn.sanity.io/files/1t8iva7t/production/a2cbbed7c998cf93e7ecb6dae75bab42b13139c2.mp4",
-    posterSrc = "/images/design-mode/9ad78a5534a46e77bafe116ce1c38172c60dc21a-1069x1068.png",
-    primaryButtonText = "Start analyzing",
-    primaryButtonHref = "",
-    secondaryButtonText = "View API Docs",
-    secondaryButtonHref = "",
+    dailyVolume="5,200+",
+dailyVolumeLabel="DAILY ACTIVE LEARNERS",
+headline="A Modern Learning Management System for Teams and Institutions",
+subheadline="Deliver structured learning, manage classes, track progress, and engage students with built-in forums, discussions, quizzes, and organized course content — all in one platform.",
+description="Designed for trainers, educators, and organizations, our LMS simplifies course creation, student management, assessments, and learner engagement. With real-time progress tracking, integrated discussion boards, and accessible learning tools, it’s everything you need to support effective teaching and learning.",
+videoSrc="/videos/lms-showcase.mp4",
+posterSrc="/study-group-african-people.jpg",
+primaryButtonText="Explore Courses",
+primaryButtonHref="/courses",
+secondaryButtonText="For Trainers",
+secondaryButtonHref="/trainers"
+
   } = props
 
   // @return
@@ -160,7 +161,7 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
             className="col-span-12 lg:col-span-6 bg-white rounded-[40px] flex justify-center items-center aspect-square overflow-hidden"
             style={{
               backgroundImage:
-                "url(https://storage.googleapis.com/storage.magicpath.ai/user/282171029206482944/assets/882ef3dd-3459-4fd8-a939-52ceada51d5c.png)",
+                "url(/study-group-african-people.jpg)",
               backgroundSize: "cover",
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
@@ -177,7 +178,7 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
               className="block w-full h-full object-cover"
               style={{
                 backgroundImage:
-                  "url(https://storage.googleapis.com/storage.magicpath.ai/user/282171029206482944/assets/38855cdf-b40a-445b-a17c-c2bbb35c884e.png)",
+                  "url(/study-group-african-people.jpg)",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat",

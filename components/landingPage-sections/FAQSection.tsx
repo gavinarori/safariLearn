@@ -13,21 +13,47 @@ type FAQSectionProps = {
 }
 const defaultFAQs: FAQItem[] = [
   {
-    question: "What is Auralink and how does it work?",
+    question: "What is this platform and who is it for?",
     answer:
-      "Auralink is an AI-powered intelligence layer that connects all your communication tools—calls, chats, and meetings—into a unified system. It analyzes conversations in real-time to provide insights on sentiment, tone, team alignment, and collaboration patterns. Simply integrate Auralink with your existing tools like Slack, Zoom, or Microsoft Teams, and start gaining actionable insights immediately.",
+      "Our platform is a modern Learning Management System designed for trainers, instructors, and organizations who want to deliver structured courses online. Learners can enroll, watch lessons, follow structured curriculums, participate in discussions, and track learning progress — all in one place.",
   },
   {
-    question: "How does Auralink use my data to build a custom AI chat?",
+    question: "How do trainers create and manage their courses?",
     answer:
-      "Auralink processes your communication data using advanced natural language processing and machine learning models. All data is encrypted end-to-end and processed in compliance with enterprise-grade security standards. Your data is never shared with third parties, and you maintain complete control over what gets analyzed. The AI learns from patterns in your team's communication to provide personalized insights specific to your organization.",
+      "Trainers can easily create courses through a simple dashboard. Upload video lessons, add modules, create curriculums, manage learners, and engage with them through course discussions. No technical knowledge is required — everything is handled through an intuitive interface.",
   },
   {
-    question: "How do I get started with Auralink and what are the pricing options?",
+    question: "Do learners need an account to access the courses?",
     answer:
-      "Getting started is simple: sign up for a free trial, connect your communication tools, and start analyzing within minutes. We offer flexible pricing tiers: Starter (free for small teams), Professional ($29/user/month), and Enterprise (custom pricing with dedicated support). All plans include core features like sentiment analysis and real-time insights. Contact our sales team for volume discounts and custom enterprise solutions.",
+      "Yes. Learners create a free account to enroll in courses, access content, join discussions, and track their progress. Some courses may be free while others may require enrollment or payment, depending on the trainer.",
+  },
+  {
+    question: "Does the platform support discussions and forums?",
+    answer:
+      "Absolutely. Each course includes a built-in discussion space where learners can ask questions, interact with trainers, and participate in topic-based forums. Discussions are organized per lesson and per course for easy navigation.",
+  },
+  {
+    question: "Can the platform handle video content?",
+    answer:
+      "Yes. Trainers can upload or link video lessons directly into the platform. Videos are optimized for smooth playback across all devices, and each lesson can include descriptions, materials, and discussions beneath it.",
+  },
+  {
+    question: "Is there a limit to how many courses I can create?",
+    answer:
+      "No. Trainers can create as many courses, modules, and lessons as they need. The platform is built to scale as your content and learner base grows.",
+  },
+  {
+    question: "How do payments work for paid courses?",
+    answer:
+      "Trainers can mark courses as free or paid. When payments are enabled, learners can purchase courses through a secure payment checkout. Trainers receive payouts for their enrolled learners depending on their chosen plan.",
+  },
+  {
+    question: "Is the platform mobile-friendly?",
+    answer:
+      "Yes. Both trainers and learners can access the platform on desktop, tablet, or mobile. All pages, lessons, and discussions are fully responsive.",
   },
 ]
+
 export const FAQSection = ({ title = "Frequently asked questions", faqs = defaultFAQs }: FAQSectionProps) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const toggleFAQ = (index: number) => {
