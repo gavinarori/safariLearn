@@ -27,33 +27,25 @@ type FooterProps = {
 
 const defaultSections: FooterSection[] = [
   {
-    title: "Product",
+    title: "Platform",
     links: [
       { label: "Features", href: "#features" },
-      { label: "Integrations", href: "#integrations" },
+      { label: "Courses", href: "#courses" },
       { label: "Pricing", href: "#pricing" },
-      { label: "API Docs", href: "#api" },
-      { label: "Changelog", href: "#changelog" },
     ],
   },
   {
     title: "Company",
     links: [
       { label: "About", href: "#about" },
-      { label: "Careers", href: "#careers" },
-      { label: "Blog", href: "#blog" },
-      { label: "Press Kit", href: "#press" },
       { label: "Contact", href: "#contact" },
     ],
   },
   {
-    title: "Resources",
+    title: "Support",
     links: [
-      { label: "Documentation", href: "#docs" },
       { label: "Help Center", href: "#help" },
       { label: "Community", href: "#community" },
-      { label: "Case Studies", href: "#case-studies" },
-      { label: "Webinars", href: "#webinars" },
     ],
   },
   {
@@ -61,21 +53,18 @@ const defaultSections: FooterSection[] = [
     links: [
       { label: "Privacy Policy", href: "#privacy" },
       { label: "Terms of Service", href: "#terms" },
-      { label: "Security", href: "#security" },
-      { label: "Compliance", href: "#compliance" },
-      { label: "Cookie Policy", href: "#cookies" },
     ],
   },
 ]
 
+
 export const Footer = ({
-  companyName = "Auralink",
-  tagline = "The Intelligence Layer for Modern Communication",
+  companyName = "SafariLearn.",
+  tagline = "A simple learning platform for trainers and learners",
   sections = defaultSections,
   socialLinks = {
     twitter: "https://twitter.com",
     linkedin: "https://linkedin.com",
-    github: "https://github.com",
     email: "hello@auralink.com",
   },
   copyrightText,
@@ -98,11 +87,11 @@ export const Footer = ({
             <div className="mb-4">
               <h3
                 className="text-2xl font-semibold text-[#202020] mb-2"
-                style={{ fontFamily: "Figtree", fontWeight: "500" }}
+                
               >
                 {companyName}
               </h3>
-              <p className="text-sm leading-5 text-[#666666] max-w-xs" style={{ fontFamily: "Figtree" }}>
+              <p className="text-sm leading-5 text-[#666666] max-w-xs" >
                 {tagline}
               </p>
             </div>
@@ -160,7 +149,6 @@ export const Footer = ({
             >
               <h4
                 className="text-sm font-medium text-[#202020] mb-4 uppercase tracking-wide"
-                style={{ fontFamily: "Figtree", fontWeight: "500" }}
               >
                 {section.title}
               </h4>
@@ -190,21 +178,21 @@ export const Footer = ({
           className="pt-8 border-t border-[#e5e5e5]"
         >
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-[#666666]" style={{ fontFamily: "Figtree" }}>
+            <p className="text-sm text-[#666666]" >
               {copyright}
             </p>
             <div className="flex items-center gap-6">
               <a
                 href="#status"
                 className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
-                style={{ fontFamily: "Figtree" }}
+                
               >
                 Status
               </a>
               <a
                 href="#sitemap"
                 className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
-                style={{ fontFamily: "Figtree" }}
+                
               >
                 Sitemap
               </a>

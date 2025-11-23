@@ -3,22 +3,23 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
+import { Button } from "../ui/button"
 const navigationLinks = [
   {
-    name: "Features",
-    href: "#features",
+    name: "Explore Courses",
+    href: "#explore-courses",
   },
   {
-    name: "Pricing",
-    href: "#pricing",
+    name: "Create Course",
+    href: "#create-course",
   },
   {
-    name: "Solutions",
-    href: "#solutions",
+    name: "For Trainers",
+    href: "#for-trainers",
   },
   {
-    name: "Resources",
-    href: "#resources",
+    name: "For Learners",
+    href: "#for-learners",
   },
 ] as any[]
 
@@ -65,12 +66,8 @@ export const PortfolioNavbar = () => {
               }}
             >
               <span
-                style={{
-                  fontFamily: "Figtree",
-                  fontWeight: "800",
-                }}
               >
-                Auralink
+                SafariLearn.
               </span>
             </button>
           </div>
@@ -82,10 +79,7 @@ export const PortfolioNavbar = () => {
                   key={link.name}
                   onClick={() => handleLinkClick(link.href)}
                   className="text-foreground hover:text-primary px-3 py-2 text-base font-medium transition-colors duration-200 relative group"
-                  style={{
-                    fontFamily: "Figtree, sans-serif",
-                    fontWeight: "400",
-                  }}
+                
                 >
                   <span>{link.name}</span>
                   <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></div>
@@ -95,22 +89,16 @@ export const PortfolioNavbar = () => {
           </div>
 
           <div className="hidden md:block">
-            <button
+            <Button 
               onClick={() => handleLinkClick("#contact")}
-              className="bg-[#156d95] text-white px-[18px] rounded-full text-base font-semibold hover:bg-[#156d95]/90 transition-all duration-200 hover:rounded-2xl shadow-sm hover:shadow-md whitespace-nowrap leading-4 py-[15px]"
-              style={{
-                fontFamily: "Plus Jakarta Sans, sans-serif",
-              }}
+              
             >
               <span
-                style={{
-                  fontFamily: "Figtree",
-                  fontWeight: "500",
-                }}
+                
               >
-                Start Free Trial
+                Join Wait List
               </span>
-            </button>
+            </Button>
           </div>
 
           <div className="md:hidden">

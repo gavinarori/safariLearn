@@ -15,7 +15,6 @@ export default function Page() {
       <BankingScaleHero />
       <CaseStudiesCarousel />
       <IntegrationCarousel />
-      <PricingSection />
       <FAQSection />
       <Footer />
     </>

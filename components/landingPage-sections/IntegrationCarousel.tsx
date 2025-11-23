@@ -15,112 +15,29 @@ type IntegrationCarouselProps = {
   bottomRowApps?: IntegrationApp[]
 }
 const defaultTopRowApps: IntegrationApp[] = [
-  {
-    name: "Integration 1",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-389-Hc8XBOUI8vkVmIwWQZs33kxMF353Xj.png",
-  },
-  {
-    name: "Integration 2",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-407-eyikTTM6ccO0f4I7ZmNk5LpFI4EKOG.png",
-  },
-  {
-    name: "Integration 3",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-379-5hDaxwIw4LzjwXzWuorEXi7ESrGYl1.png",
-  },
-  {
-    name: "Integration 4",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-374-bp0RaoVnQI1JMqR9fjessWI8v33kLV.png",
-  },
-  {
-    name: "Integration 5",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-381-eKw7vkCp2Wq9hivZJaN1ERJdjCqR0d.png",
-  },
-  {
-    name: "Integration 6",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-401-F6mjMLGEZt4HAohKA889Z8Gf5fMzIw.png",
-  },
-  {
-    name: "Integration 7",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-403-HnBAGFYWgxxMGrH2PI45UorQOsQHFo.png",
-  },
-  {
-    name: "Integration 1",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-389-Hc8XBOUI8vkVmIwWQZs33kxMF353Xj.png",
-  },
-  {
-    name: "Integration 2",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-407-eyikTTM6ccO0f4I7ZmNk5LpFI4EKOG.png",
-  },
-  {
-    name: "Integration 3",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-379-5hDaxwIw4LzjwXzWuorEXi7ESrGYl1.png",
-  },
-  {
-    name: "Integration 4",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-374-bp0RaoVnQI1JMqR9fjessWI8v33kLV.png",
-  },
-  {
-    name: "Integration 5",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-381-eKw7vkCp2Wq9hivZJaN1ERJdjCqR0d.png",
-  },
+  { name: "YouTube", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/youtube.svg" },
+  { name: "Google Drive", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googledrive.svg" },
+  { name: "Notion", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/notion.svg" },
+  { name: "Figma", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/figma.svg" },
+  { name: "Dropbox", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/dropbox.svg" },
+  { name: "Vimeo", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/vimeo.svg" },
 ]
+
 const defaultBottomRowApps: IntegrationApp[] = [
-  {
-    name: "Integration 6",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-401-F6mjMLGEZt4HAohKA889Z8Gf5fMzIw.png",
-  },
-  {
-    name: "Integration 7",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-403-HnBAGFYWgxxMGrH2PI45UorQOsQHFo.png",
-  },
-  {
-    name: "Integration 1",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-389-Hc8XBOUI8vkVmIwWQZs33kxMF353Xj.png",
-  },
-  {
-    name: "Integration 2",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-407-eyikTTM6ccO0f4I7ZmNk5LpFI4EKOG.png",
-  },
-  {
-    name: "Integration 3",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-379-5hDaxwIw4LzjwXzWuorEXi7ESrGYl1.png",
-  },
-  {
-    name: "Integration 4",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-374-bp0RaoVnQI1JMqR9fjessWI8v33kLV.png",
-  },
-  {
-    name: "Integration 5",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-381-eKw7vkCp2Wq9hivZJaN1ERJdjCqR0d.png",
-  },
-  {
-    name: "Integration 6",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-401-F6mjMLGEZt4HAohKA889Z8Gf5fMzIw.png",
-  },
-  {
-    name: "Integration 7",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-403-HnBAGFYWgxxMGrH2PI45UorQOsQHFo.png",
-  },
-  {
-    name: "Integration 1",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-389-Hc8XBOUI8vkVmIwWQZs33kxMF353Xj.png",
-  },
-  {
-    name: "Integration 2",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-407-eyikTTM6ccO0f4I7ZmNk5LpFI4EKOG.png",
-  },
-  {
-    name: "Integration 3",
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-379-5hDaxwIw4LzjwXzWuorEXi7ESrGYl1.png",
-  },
+  { name: "Zoom", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/zoom.svg" },
+  { name: "Slack", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/slack.svg" },
+  { name: "Google Meet", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlemeet.svg" },
+  { name: "Discord", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/discord.svg" },
+  { name: "Loom", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/loom.svg" },
+  { name: "Miro", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/miro.svg" },
 ]
+
 
 // @component: IntegrationCarousel
 export const IntegrationCarousel = ({
-  buttonText = "Explore Integrations",
-  buttonHref = "#",
-  title = "Integrates with your entire collaboration stack.",
-  subtitle = "Connect Auralink to Slack, Zoom, Notion, Google Meet, and dozens of others to analyze communication seamlessly.",
+  title="Works with the tools trainers already use.",
+subtitle="Upload videos, PDFs, slides, and course materials from your favorite platforms — everything organized in one learning space.",
+buttonText="See how it works",
   topRowApps = defaultTopRowApps,
   bottomRowApps = defaultBottomRowApps,
 }: IntegrationCarouselProps) => {
@@ -198,7 +115,7 @@ export const IntegrationCarousel = ({
             className="flex gap-3 mt-6"
           >
             <a
-              href={buttonHref}
+              href={``}
               className="inline-block px-5 py-2.5 rounded-full bg-white text-[#222222] text-[15px] font-medium leading-6 text-center whitespace-nowrap transition-all duration-75 ease-out w-[182px] cursor-pointer hover:shadow-lg"
               style={{
                 boxShadow:

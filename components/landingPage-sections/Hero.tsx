@@ -18,26 +18,27 @@ type DataPoint = {
 }
 const stats: StatItem[] = [
   {
-    value: "1B+",
-    description: "Messages analyzed\ndaily",
+    value: "10k+",
+    description: "Active learners\nworldwide",
     delay: 0,
   },
   {
-    value: "99.9%",
-    description: "Accuracy in tone\ndetection",
+    value: "500+",
+    description: "Lessons published\nby experts",
     delay: 0.2,
   },
   {
-    value: "50+",
-    description: "Languages supported\nworldwide",
+    value: "150+",
+    description: "Communities & courses\nto explore",
     delay: 0.4,
   },
   {
-    value: "1000+",
-    description: "Organizations using\nAuralink",
+    value: "4.9/5",
+    description: "Average learner\nsatisfaction",
     delay: 0.6,
   },
 ]
+
 const generateDataPoints = (): DataPoint[] => {
   const points: DataPoint[] = []
   const baseLeft = 1
@@ -98,7 +99,7 @@ export const BankingScaleHero = () => {
                     color: "#146e96",
                   }}
                 >
-                  Trusted at scale
+                  Built for modern learning
                 </motion.span>
                 <motion.span
                   initial={{
@@ -128,7 +129,7 @@ export const BankingScaleHero = () => {
                 fontWeight: "400",
               }}
             >
-              Analyzing billions of conversations daily{" "}
+              Powering the next generation of learning{" "}
               <span
                 className="opacity-40"
                 style={{
@@ -136,7 +137,7 @@ export const BankingScaleHero = () => {
                   fontSize: "40px",
                 }}
               >
-                for the world's most sophisticated teams and enterprises.
+                 with courses, community, and real-time collaboration.
               </span>
             </h2>
 
@@ -146,13 +147,13 @@ export const BankingScaleHero = () => {
                 fontFamily: "var(--font-figtree), Figtree",
               }}
             >
-              As the intelligence layer for modern communication, we provide real-time insights and emotional detection
-              through our advanced AI-powered platform.
+                Our platform brings together expert-led courses, in-lesson discussions, and a vibrant learning community — 
+  all in one place. Learn, connect, and grow with people who share your goals.
             </p>
 
             <button className="relative inline-flex justify-center items-center leading-4 text-center cursor-pointer whitespace-nowrap outline-none font-medium h-9 text-[#232730] bg-white/50 backdrop-blur-sm shadow-[0_1px_1px_0_rgba(255,255,255,0),0_0_0_1px_rgba(87,90,100,0.12)] transition-all duration-200 ease-in-out rounded-lg px-4 mt-5 text-sm group hover:shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_1px_rgba(87,90,100,0.18)]">
               <span className="relative z-10 flex items-center gap-1">
-                Learn about our platform
+                Explore the platform
                 <ArrowRight className="w-4 h-4 -mr-1 transition-transform duration-150 group-hover:translate-x-1" />
               </span>
             </button>
