@@ -12,7 +12,7 @@ import {
   ChevronUp,
 
 } from "lucide-react"
-import { AppSidebar } from "@/components/learn-components/app-sidebar"
+import { DiscussionSidebar } from "@/components/learn-components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import {
   SidebarInset,
@@ -196,165 +196,163 @@ export default function CoursePlayerPage() {
     )
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "350px",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar />
-      <SidebarInset>
-        <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
-        </header>
-        <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-4 lg:p-6">
-<div className="space-y-6">
+  <SidebarProvider
+    style={
+      {
+        "--sidebar-width": "350px",
+      } as React.CSSProperties
+    }
+  >
+    <DiscussionSidebar courseId={courseId} />
 
-<div className="
-  w-full 
-  h-56 
-  sm:h-64 
-  md:h-[45vh] 
-  lg:h-[50vh] 
-  xl:h-[60vh] 
-  2xl:h-[65vh]
-  rounded-xl 
-  overflow-hidden 
-  bg-black
-">
-  {currentLesson?.video_url ? (
-    <VideoPlayer className="w-full h-full">
-      <VideoPlayerContent
-        crossOrigin=""
-        muted
-        preload="auto"
-        slot="media"
-        src={currentLesson.video_url || ""}
-      />
-      <VideoPlayerControlBar>
-        <VideoPlayerPlayButton />
-        <VideoPlayerSeekBackwardButton />
-        <VideoPlayerSeekForwardButton />
-        <VideoPlayerTimeRange />
-        <VideoPlayerTimeDisplay showDuration />
-        <VideoPlayerMuteButton />
-        <VideoPlayerVolumeRange />
-      </VideoPlayerControlBar>
-    </VideoPlayer>
-  ) : (
-    <img
-      src="/placeholder.svg"
-      alt="Video player"
-      className="w-full h-full object-cover"
-    />
-  )}
-</div>
+    <SidebarInset className="flex flex-col min-h-screen bg-background">
 
+      {/* Top Bar */}
+      <header className="bg-background sticky top-0 flex items-center gap-2 border-b p-4 z-10">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="h-4" />
+      </header>
 
-  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* PAGE CONTENT */}
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 lg:p-6 space-y-6">
 
-    <div className="lg:col-span-1">
-      <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
-        <CardHeader>
-          <CardTitle>Curriculum</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {weeks.map((week) => (
-            <div key={week}>
-              <button
-                onClick={() =>
-                  setExpandedWeeks((prev) => ({
-                    ...prev,
-                    [week]: !prev[week],
-                  }))
-                }
-                className="flex justify-between items-center w-full p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors mb-2 font-semibold text-sm"
-              >
-                <span>Week {week}</span>
-                {expandedWeeks[week] ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
-
-              {expandedWeeks[week] && (
-                <div className="space-y-1 ml-2 mb-4">
-                  {groupedLessons[week].map((lesson) => (
-                    <button
-                      key={lesson.id}
-                      onClick={() => handleSelectLesson(lesson)}
-                      className={`block w-full text-left p-2 rounded transition-colors text-sm ${
-                        currentLesson?.id === lesson.id
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-secondary"
-                      }`}
-                    >
-                      <div className="flex gap-2 items-start">
-                        <div className="flex-1">
-                          <p className="font-medium leading-tight">{lesson.title}</p>
-                          <p className="text-xs opacity-70">{lesson.duration}</p>
-                        </div>
-                        {completedLessons[lesson.id] && (
-                          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-1" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
-
-    {/* RIGHT SIDE: DETAILS */}
-    <div className="lg:col-span-3 space-y-6">
-      <Card className="p-6">
-        <Badge className="mb-2">
-          Week {currentLesson?.week} • Lesson {currentLesson?.number}
-        </Badge>
-
-        <h1 className="text-2xl font-bold mb-4">{currentLesson?.title}</h1>
-
-        <div className="flex flex-wrap gap-4">
-          <Button
-            onClick={() => currentLesson && toggleLessonComplete(currentLesson.id)}
-            variant={currentLesson?.completed ? "default" : "outline"}
-          >
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            {currentLesson?.completed ? "Completed" : "Mark as Complete"}
-          </Button>
-
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Download Materials
-          </Button>
+        {/* VIDEO PLAYER */}
+        <div
+          className="
+            w-full 
+            h-56 
+            sm:h-64 
+            md:h-[45vh] 
+            lg:h-[50vh] 
+            xl:h-[60vh] 
+            2xl:h-[65vh]
+            rounded-xl 
+            overflow-hidden 
+            bg-black
+          "
+        >
+          {currentLesson?.video_url ? (
+            <VideoPlayer className="w-full h-full">
+              <VideoPlayerContent
+                crossOrigin=""
+                muted
+                preload="auto"
+                slot="media"
+                src={currentLesson.video_url || ""}
+              />
+              <VideoPlayerControlBar>
+                <VideoPlayerPlayButton />
+                <VideoPlayerSeekBackwardButton />
+                <VideoPlayerSeekForwardButton />
+                <VideoPlayerTimeRange />
+                <VideoPlayerTimeDisplay showDuration />
+                <VideoPlayerMuteButton />
+                <VideoPlayerVolumeRange />
+              </VideoPlayerControlBar>
+            </VideoPlayer>
+          ) : (
+            <img
+              src="/placeholder.svg"
+              alt="Video player"
+              className="w-full h-full object-cover"
+            />
+          )}
         </div>
-      </Card>
 
-      {/* Add more sections here if needed */}
+        {/* GRID LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-    </div>
-  </div>
-</div>
+          {/* LEFT: CURRICULUM */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto">
+              <CardHeader>
+                <CardTitle>Curriculum</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {weeks.map((week) => (
+                  <div key={week}>
+                    <button
+                      onClick={() =>
+                        setExpandedWeeks((prev) => ({
+                          ...prev,
+                          [week]: !prev[week],
+                        }))
+                      }
+                      className="flex justify-between items-center w-full p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors mb-2 font-semibold text-sm"
+                    >
+                      <span>Week {week}</span>
+                      {expandedWeeks[week] ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
 
+                    {expandedWeeks[week] && (
+                      <div className="space-y-1 ml-2 mb-4">
+                        {groupedLessons[week].map((lesson) => (
+                          <button
+                            key={lesson.id}
+                            onClick={() => handleSelectLesson(lesson)}
+                            className={`block w-full text-left p-2 rounded transition-colors text-sm ${
+                              currentLesson?.id === lesson.id
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-secondary"
+                            }`}
+                          >
+                            <div className="flex gap-2 items-start">
+                              <div className="flex-1">
+                                <p className="font-medium leading-tight">{lesson.title}</p>
+                                <p className="text-xs opacity-70">{lesson.duration}</p>
+                              </div>
+                              {completedLessons[lesson.id] && (
+                                <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-1" />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
 
-      </div>
-    </div>
-      </SidebarInset>
-    </SidebarProvider>
-  )
-}
+          {/* RIGHT: LESSON DETAILS */}
+          <div className="lg:col-span-3 space-y-6">
+            <Card className="p-6">
+              <Badge className="mb-2">
+                Week {currentLesson?.week} • Lesson {currentLesson?.number}
+              </Badge>
 
-/* ---------- Helpers ---------- */
+              <h1 className="text-2xl font-bold mb-4">
+                {currentLesson?.title}
+              </h1>
+
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  onClick={() => currentLesson && toggleLessonComplete(currentLesson.id)}
+                  variant={currentLesson?.completed ? "default" : "outline"}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  {currentLesson?.completed ? "Completed" : "Mark as Complete"}
+                </Button>
+
+                <Button variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Materials
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+        </div>
+      </main>
+    </SidebarInset>
+  </SidebarProvider>
+)
+};
 
 function formatDurationMinutes(mins?: number | null) {
   if (!mins || isNaN(Number(mins))) return "0:00"
