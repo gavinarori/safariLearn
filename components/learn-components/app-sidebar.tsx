@@ -1,12 +1,17 @@
 "use client"
 
 import * as React from "react"
-import { ArchiveX, Command, File, Inbox, Send, Trash2 } from "lucide-react"
-
-import { NavUser } from "@/components/nav-user"
-import { Label } from "@/components/ui/label"
 import {
-  Sidebar,
+  MessageSquare,
+  PlusCircle,
+  Bookmark,
+  User2,
+  MessageCircle,
+  Search,
+} from "lucide-react"
+
+import { Sidebar } from "@/components/ui/sidebar"
+import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -18,243 +23,183 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Switch } from "@/components/ui/switch"
+import { NavUser } from "@/components/nav-user"
+
 import {
-  IconInnerShadowTop,
-} from "@tabler/icons-react"
+  getThreadsByCourseId,
+  type DiscussionThread,
+} from "@/services/discussionsService"
 
-// This is sample data
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "Inbox",
-      url: "#",
-      icon: Inbox,
-      isActive: true,
-    },
-    {
-      title: "Drafts",
-      url: "#",
-      icon: File,
-      isActive: false,
-    },
-    {
-      title: "Sent",
-      url: "#",
-      icon: Send,
-      isActive: false,
-    },
-    {
-      title: "Junk",
-      url: "#",
-      icon: ArchiveX,
-      isActive: false,
-    },
-    {
-      title: "Trash",
-      url: "#",
-      icon: Trash2,
-      isActive: false,
-    },
-  ],
-  mails: [
-    {
-      name: "William Smith",
-      email: "williamsmith@example.com",
-      subject: "Meeting Tomorrow",
-      date: "09:34 AM",
-      teaser:
-        "Hi team, just a reminder about our meeting tomorrow at 10 AM.\nPlease come prepared with your project updates.",
-    },
-    {
-      name: "Alice Smith",
-      email: "alicesmith@example.com",
-      subject: "Re: Project Update",
-      date: "Yesterday",
-      teaser:
-        "Thanks for the update. The progress looks great so far.\nLet's schedule a call to discuss the next steps.",
-    },
-    {
-      name: "Bob Johnson",
-      email: "bobjohnson@example.com",
-      subject: "Weekend Plans",
-      date: "2 days ago",
-      teaser:
-        "Hey everyone! I'm thinking of organizing a team outing this weekend.\nWould you be interested in a hiking trip or a beach day?",
-    },
-    {
-      name: "Emily Davis",
-      email: "emilydavis@example.com",
-      subject: "Re: Question about Budget",
-      date: "2 days ago",
-      teaser:
-        "I've reviewed the budget numbers you sent over.\nCan we set up a quick call to discuss some potential adjustments?",
-    },
-    {
-      name: "Michael Wilson",
-      email: "michaelwilson@example.com",
-      subject: "Important Announcement",
-      date: "1 week ago",
-      teaser:
-        "Please join us for an all-hands meeting this Friday at 3 PM.\nWe have some exciting news to share about the company's future.",
-    },
-    {
-      name: "Sarah Brown",
-      email: "sarahbrown@example.com",
-      subject: "Re: Feedback on Proposal",
-      date: "1 week ago",
-      teaser:
-        "Thank you for sending over the proposal. I've reviewed it and have some thoughts.\nCould we schedule a meeting to discuss my feedback in detail?",
-    },
-    {
-      name: "David Lee",
-      email: "davidlee@example.com",
-      subject: "New Project Idea",
-      date: "1 week ago",
-      teaser:
-        "I've been brainstorming and came up with an interesting project concept.\nDo you have time this week to discuss its potential impact and feasibility?",
-    },
-    {
-      name: "Olivia Wilson",
-      email: "oliviawilson@example.com",
-      subject: "Vacation Plans",
-      date: "1 week ago",
-      teaser:
-        "Just a heads up that I'll be taking a two-week vacation next month.\nI'll make sure all my projects are up to date before I leave.",
-    },
-    {
-      name: "James Martin",
-      email: "jamesmartin@example.com",
-      subject: "Re: Conference Registration",
-      date: "1 week ago",
-      teaser:
-        "I've completed the registration for the upcoming tech conference.\nLet me know if you need any additional information from my end.",
-    },
-    {
-      name: "Sophia White",
-      email: "sophiawhite@example.com",
-      subject: "Team Dinner",
-      date: "1 week ago",
-      teaser:
-        "To celebrate our recent project success, I'd like to organize a team dinner.\nAre you available next Friday evening? Please let me know your preferences.",
-    },
-  ],
-}
+import { subscribeToCourseThreads } from "@/services/websocketService"
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  // Note: I'm using state to show active item.
-  // IRL you should use the url/router.
-  const [activeItem, setActiveItem] = React.useState(data.navMain[0])
-  const [mails, setMails] = React.useState(data.mails)
+// Props: pass courseId to load correct discussions
+export function DiscussionSidebar({
+  courseId,
+}: {
+  courseId: any
+}) {
   const { setOpen } = useSidebar()
 
+  const [activeTab, setActiveTab] = React.useState("threads")
+  const [threads, setThreads] = React.useState<DiscussionThread[]>([])
+  const [searchQuery, setSearchQuery] = React.useState("")
+
+  /* 🔥 Load threads */
+
+   async function loadThreads() {
+    const data = await getThreadsByCourseId(courseId)
+    setThreads(data)
+  }
+
+  React.useEffect(() => {
+    if (!courseId) return
+    loadThreads()
+  }, [courseId])
+
+ 
+
+  /* 🔥 Realtime updates */
+  React.useEffect(() => {
+    if (!courseId) return
+
+    const channel = subscribeToCourseThreads(courseId, (newThread) => {
+      setThreads((prev) => [newThread, ...prev])
+    })
+
+    return () => channel.unsubscribe()
+  }, [courseId])
+
+  const filteredThreads = threads.filter((t) =>
+    t.title.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const navMenu = [
+    { title: "All Threads", value: "threads", icon: MessageSquare },
+    { title: "My Posts", value: "myposts", icon: User2 },
+    { title: "Bookmarked", value: "bookmarks", icon: Bookmark },
+  ]
+
   return (
-    <Sidebar
-      collapsible="icon"
-      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
-      {...props}
-    >
-      {/* This is the first sidebar */}
-      {/* We disable collapsible and adjust width to icon. */}
-      {/* This will make the sidebar appear as icons. */}
+    <Sidebar collapsible="icon" className="overflow-hidden bg-white">
+      {/* -------- Left Compact Section -------- */}
       <Sidebar
         collapsible="none"
-        className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+        className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r bg-gray-50"
       >
-        <SidebarHeader>
+        <SidebarHeader className="p-3">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                <a href="#">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <IconInnerShadowTop className="size-4" />
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">safariLearn.</span>
-                    <span className="truncate text-xs">Enterprise</span>
-                  </div>
-                </a>
+              <SidebarMenuButton
+                size="lg"
+                className="flex flex-col items-center gap-1"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white">
+                  <MessageCircle className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium">Discussions</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
+
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent className="px-1.5 md:px-0">
-              <SidebarMenu>
-                {data.navMain.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      tooltip={{
-                        children: item.title,
-                        hidden: false,
-                      }}
-                      onClick={() => {
-                        setActiveItem(item)
-                        const mail = data.mails.sort(() => Math.random() - 0.5)
-                        setMails(
-                          mail.slice(
-                            0,
-                            Math.max(5, Math.floor(Math.random() * 10) + 1)
-                          )
-                        )
-                        setOpen(true)
-                      }}
-                      isActive={activeItem?.title === item.title}
-                      className="px-2.5 md:px-2"
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <SidebarMenu>
+            {navMenu.map((item) => (
+              <SidebarMenuItem key={item.value}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  isActive={activeTab === item.value}
+                  onClick={() => {
+                    setActiveTab(item.value)
+                    setOpen(true)
+                  }}
+                >
+                  <item.icon />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
         </SidebarContent>
+
         <SidebarFooter>
-          <NavUser  />
+          <NavUser />
         </SidebarFooter>
       </Sidebar>
 
-      {/* This is the second sidebar */}
-      {/* We disable collapsible and let it fill remaining space */}
-      <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-        <SidebarHeader className="gap-3.5 border-b p-4">
-          <div className="flex w-full items-center justify-between">
-            <div className="text-foreground text-base font-medium">
-              {activeItem?.title}
-            </div>
-            <Label className="flex items-center gap-2 text-sm">
-              <span>Unreads</span>
-              <Switch className="shadow-none" />
-            </Label>
+      {/* -------- Main Discussion Panel -------- */}
+      <Sidebar collapsible="none" className="hidden flex-1 flex-col md:flex">
+        <SidebarHeader className="border-b p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold">
+              {activeTab === "threads" && "All Threads"}
+              {activeTab === "myposts" && "My Posts"}
+              {activeTab === "bookmarks" && "Bookmarks"}
+            </h2>
+
+            <button
+              className="flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-white text-sm hover:bg-primary/90"
+              onClick={() => console.log("Open create thread modal")}
+            >
+              <PlusCircle className="h-4 w-4" />
+              New Thread
+            </button>
           </div>
-          <SidebarInput placeholder="Type to search..." />
+
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <SidebarInput
+              className="pl-10"
+              placeholder="Search threads..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup className="px-0">
+
+        {/* -------- Thread List -------- */}
+        <SidebarContent className="overflow-y-auto">
+          <SidebarGroup>
             <SidebarGroupContent>
-              {mails.map((mail) => (
-                <a
-                  href="#"
-                  key={mail.email}
-                  className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
-                >
-                  <div className="flex w-full items-center gap-2">
-                    <span>{mail.name}</span>{" "}
-                    <span className="ml-auto text-xs">{mail.date}</span>
-                  </div>
-                  <span className="font-medium">{mail.subject}</span>
-                  <span className="line-clamp-2 w-[260px] text-xs whitespace-break-spaces">
-                    {mail.teaser}
-                  </span>
-                </a>
+              {filteredThreads.length === 0 && (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No threads yet. Be the first to start a conversation!
+                </div>
+              )}
+
+              {filteredThreads.map((thread) => (
+                <SidebarMenuItem key={thread.id}>
+                  <SidebarMenuButton
+                    asChild
+                    className="flex flex-col items-start gap-2 p-4 hover:bg-gray-50"
+                  >
+                    <a href={`/course/${courseId}/discussion/${thread.id}`}>
+                      <div className="flex w-full items-center gap-2">
+                        <span className="font-medium text-sm">
+                          {thread.title}
+                        </span>
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          {new Date(thread.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <span className="text-xs text-muted-foreground line-clamp-2">
+                        {thread.body}
+                      </span>
+
+                      {thread.user && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <img
+                            src={thread.user.avatar_url}
+                            className="h-5 w-5 rounded-full"
+                          />
+                          <span className="text-[11px] text-muted-foreground">
+                            {thread.user.full_name}
+                          </span>
+                        </div>
+                      )}
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               ))}
             </SidebarGroupContent>
           </SidebarGroup>
