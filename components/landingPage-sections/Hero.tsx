@@ -94,7 +94,7 @@ export const BankingScaleHero = () => {
                     duration: 0.8,
                     ease: "easeOut",
                   }}
-                  className="block whitespace-nowrap overflow-hidden text-[#167E6C] relative z-10"
+                  className="block whitespace-nowrap overflow-hidden text-primary relative z-10"
                   style={{
                     color: "#146e96",
                   }}
@@ -209,7 +209,7 @@ export const BankingScaleHero = () => {
                           duration: 0.3,
                           delay: point.delay + 1.7,
                         }}
-                        className="absolute -left-[1px] w-2 h-2 bg-[#167E6C] rounded-full"
+                        className="absolute -left-[1px] w-2 h-2 bg-primary rounded-full"
                         style={{
                           top: point.direction === "down" ? "0px" : `${point.height - 8}px`,
                         }}
@@ -248,15 +248,7 @@ export const BankingScaleHero = () => {
                       }}
                       className="flex flex-col gap-2"
                     >
-                      <span
-                        className="text-2xl font-medium leading-[26.4px] tracking-tight text-[#167E6C]"
-                        style={{
-                          color: "#146e96",
-                        }}
-                      >
-                        {stat.value}
-                      </span>
-                      <p className="text-xs leading-[13.2px] text-[#7C7F88] m-0 whitespace-pre-line">
+                      <p className="text-xs leading-[13.2px]  m-0 whitespace-pre-line">
                         {stat.description}
                       </p>
                     </motion.div>
