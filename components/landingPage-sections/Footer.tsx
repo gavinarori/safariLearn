@@ -1,6 +1,7 @@
 "use client"
 import { Github, Twitter, Linkedin, Mail } from "lucide-react"
 import { motion } from "framer-motion"
+import { IconInnerShadowTop } from "@tabler/icons-react"
 
 type FooterLink = {
   label: string
@@ -84,17 +85,18 @@ export const Footer = ({
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="col-span-2"
           >
-            <div className="mb-4">
-              <h3
-                className="text-2xl font-semibold text-[#202020] mb-2"
-                
-              >
-                {companyName}
-              </h3>
-              <p className="text-sm leading-5 text-[#666666] max-w-xs" >
-                {tagline}
-              </p>
-            </div>
+            <div className="flex-shrink-0">
+  <a
+    href="/dashboard"
+    className="flex items-center gap-2"
+  >
+    <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
+      <IconInnerShadowTop className="size-4" />
+    </div>
+
+    <span className="text-base font-semibold">safariLearn</span>
+  </a>
+</div>
 
             {/* Social Links */}
             <div className="flex items-center gap-3 mt-6">
@@ -158,7 +160,6 @@ export const Footer = ({
                     <a
                       href={link.href}
                       className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
-                      style={{ fontFamily: "Figtree" }}
                     >
                       {link.label}
                     </a>

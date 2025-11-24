@@ -126,10 +126,8 @@ secondaryButtonHref="/trainers"
                 <a
                   href={primaryButtonHref}
                   onClick={(e) => e.preventDefault()}
-                  className="block cursor-pointer text-white bg-[#0988f0] rounded-full px-[18px] py-[15px] text-base leading-4 whitespace-nowrap transition-all duration-150 ease-[cubic-bezier(0.455,0.03,0.515,0.955)] hover:rounded-2xl"
-                  style={{
-                    background: "#156d95",
-                  }}
+                  className="block cursor-pointer text-white bg-primary rounded-full px-[18px] py-[15px] text-base leading-4 whitespace-nowrap transition-all duration-150 ease-[cubic-bezier(0.455,0.03,0.515,0.955)] hover:rounded-2xl"
+                  
                 >
                   {primaryButtonText}
                 </a>
