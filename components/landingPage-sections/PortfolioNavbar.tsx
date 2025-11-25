@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { Button } from "../ui/button"
 import { IconInnerShadowTop } from "@tabler/icons-react"
+import Link from "next/link"
 const navigationLinks = [
   {
     name: "Explore Courses",
@@ -89,14 +90,14 @@ export const PortfolioNavbar = () => {
 
           <div className="hidden md:block">
             <Button 
-              onClick={() => handleLinkClick("#contact")}
+            
               
             >
-              <span
-                
+              <Link
+                href="/waitlist"
               >
                 Join Wait List
-              </span>
+              </Link>
             </Button>
           </div>
 

@@ -67,7 +67,7 @@ export function DiscussionSidebar({
     })
 
     return () => channel.unsubscribe()
-  }, [courseId])
+  } , [courseId])
 
   const filteredThreads = threads.filter((t) =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase())
