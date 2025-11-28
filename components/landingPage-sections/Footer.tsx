@@ -1,4 +1,5 @@
 "use client"
+
 import { Github, Twitter, Linkedin, Mail } from "lucide-react"
 import { motion } from "framer-motion"
 import { IconInnerShadowTop } from "@tabler/icons-react"
@@ -58,7 +59,6 @@ const defaultSections: FooterSection[] = [
   },
 ]
 
-
 export const Footer = ({
   companyName = "SafariLearn.",
   tagline = "A simple learning platform for trainers and learners",
@@ -72,9 +72,10 @@ export const Footer = ({
 }: FooterProps) => {
   const currentYear = new Date().getFullYear()
   const copyright = copyrightText || `© ${currentYear} ${companyName}. All rights reserved.`
+
   return (
-    <footer className="w-full bg-[#fafafa] border-t border-[#e5e5e5]">
-      <div className="max-w-[1200px] mx-auto px-8 py-16">
+    <footer className="w-full bg-background border-t border-border text-foreground">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-16">
         {/* Main Footer Content */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-12">
           {/* Brand Column */}
@@ -85,25 +86,26 @@ export const Footer = ({
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="col-span-2"
           >
-            <div className="flex-shrink-0">
-  <a
-    href="/dashboard"
-    className="flex items-center gap-2"
-  >
-    <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-      <IconInnerShadowTop className="size-4" />
-    </div>
+            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+              <a
+                href="/dashboard"
+                className="flex items-center gap-2"
+              >
+                <div className="bg-primary text-primary-foreground flex w-6 h-6 md:w-8 md:h-8 items-center justify-center rounded-md">
+                  <IconInnerShadowTop className="w-4 h-4 md:w-5 md:h-5" />
+                </div>
+                <span className="text-base md:text-lg font-semibold">{companyName}</span>
+              </a>
 
-    <span className="text-base font-semibold">safariLearn</span>
-  </a>
-</div>
+              <p className="text-sm md:text-base text-muted-foreground mt-2 md:mt-0">{tagline}</p>
+            </div>
 
             {/* Social Links */}
             <div className="flex items-center gap-3 mt-6">
               {socialLinks.twitter && (
                 <a
                   href={socialLinks.twitter}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors duration-150"
                   aria-label="Twitter"
                 >
                   <Twitter className="w-4 h-4" />
@@ -112,7 +114,7 @@ export const Footer = ({
               {socialLinks.linkedin && (
                 <a
                   href={socialLinks.linkedin}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors duration-150"
                   aria-label="LinkedIn"
                 >
                   <Linkedin className="w-4 h-4" />
@@ -121,7 +123,7 @@ export const Footer = ({
               {socialLinks.github && (
                 <a
                   href={socialLinks.github}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors duration-150"
                   aria-label="GitHub"
                 >
                   <Github className="w-4 h-4" />
@@ -130,7 +132,7 @@ export const Footer = ({
               {socialLinks.email && (
                 <a
                   href={`mailto:${socialLinks.email}`}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors duration-150"
                   aria-label="Email"
                 >
                   <Mail className="w-4 h-4" />
@@ -149,17 +151,15 @@ export const Footer = ({
               transition={{ duration: 0.5, delay: index * 0.1, ease: "easeOut" }}
               className="col-span-1"
             >
-              <h4
-                className="text-sm font-medium text-[#202020] mb-4 uppercase tracking-wide"
-              >
+              <h4 className="text-sm font-medium text-foreground mb-4 uppercase tracking-wide">
                 {section.title}
               </h4>
-              <ul className="space-y-3">
+              <ul className="space-y-2 md:space-y-3">
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
                     <a
                       href={link.href}
-                      className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
                     >
                       {link.label}
                     </a>
@@ -176,24 +176,20 @@ export const Footer = ({
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="pt-8 border-t border-[#e5e5e5]"
+          className="pt-8 border-t border-border"
         >
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-[#666666]" >
-              {copyright}
-            </p>
+            <p className="text-sm text-muted-foreground">{copyright}</p>
             <div className="flex items-center gap-6">
               <a
                 href="#status"
-                className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
-                
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
               >
                 Status
               </a>
               <a
                 href="#sitemap"
-                className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
-                
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
               >
                 Sitemap
               </a>
