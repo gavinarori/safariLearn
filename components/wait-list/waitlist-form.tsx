@@ -11,6 +11,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { ArrowRight } from "lucide-react"
 
+// ➜ IMPORT SUPABASE SERVICE
+import { addToWaitlist } from "@/services/waitlistService"
+
 interface WaitlistFormProps {
   onSubmit: () => void
 }
@@ -39,7 +42,6 @@ export function WaitlistForm({ onSubmit }: WaitlistFormProps) {
       return
     }
 
-    // Simple email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       setError("Please enter a valid email")
@@ -49,8 +51,14 @@ export function WaitlistForm({ onSubmit }: WaitlistFormProps) {
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      // ➜ REAL API CALL TO SUPABASE
+      await addToWaitlist({
+        full_name: name,
+        email,
+        role: role === "other" ? otherRole : role,
+        Suggestions: suggestions,
+      })
+
       onSubmit()
     } catch (err) {
       setError("Something went wrong. Please try again.")
@@ -69,46 +77,37 @@ export function WaitlistForm({ onSubmit }: WaitlistFormProps) {
             <p className="text-muted-foreground">Be part of something amazing</p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Full Name <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="name">Full Name *</Label>
               <Input
                 id="name"
                 placeholder="Enter your full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-10"
                 disabled={isLoading}
               />
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email Address <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-10"
                 disabled={isLoading}
               />
             </div>
 
-            {/* Role Selection */}
+            {/* Role */}
             <div className="space-y-2">
-              <Label htmlFor="role" className="text-sm font-medium">
-                Role <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="role">Role *</Label>
               <Select value={role} onValueChange={setRole} disabled={isLoading}>
-                <SelectTrigger id="role" className="h-10">
+                <SelectTrigger id="role">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -119,18 +118,13 @@ export function WaitlistForm({ onSubmit }: WaitlistFormProps) {
               </Select>
             </div>
 
-            {/* Conditional Other Role Input */}
             {role === "other" && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                <Label htmlFor="otherRole" className="text-sm font-medium">
-                  Specify Your Role <span className="text-red-500">*</span>
-                </Label>
+              <div className="space-y-2">
+                <Label>Specify Your Role *</Label>
                 <Input
-                  id="otherRole"
                   placeholder="Describe your role"
                   value={otherRole}
                   onChange={(e) => setOtherRole(e.target.value)}
-                  className="h-10"
                   disabled={isLoading}
                 />
               </div>
@@ -138,46 +132,27 @@ export function WaitlistForm({ onSubmit }: WaitlistFormProps) {
 
             {/* Suggestions */}
             <div className="space-y-2">
-              <Label htmlFor="suggestions" className="text-sm font-medium">
-                Suggestions & Ideas <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
-              </Label>
+              <Label>Suggestions (Optional)</Label>
               <Textarea
-                id="suggestions"
-                placeholder="Share your ideas or suggestions for our launch..."
+                placeholder="Share your suggestions..."
                 value={suggestions}
                 onChange={(e) => setSuggestions(e.target.value)}
-                className="min-h-32 resize-none"
                 disabled={isLoading}
               />
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
-            )}
+            {/* Error */}
+            {error && <div className="text-red-600 text-sm">{error}</div>}
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all duration-200"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <span className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                  Processing...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  Join Waitlist
-                  <ArrowRight className="h-4 w-4" />
-                </span>
-              )}
+            {/* Submit */}
+            <Button type="submit" disabled={isLoading} className="w-full h-11">
+              {isLoading ? "Processing..." : "Join Waitlist"}
             </Button>
           </form>
 
-          {/* Footer Note */}
-          <p className="text-xs text-muted-foreground text-center">We respect your privacy. Unsubscribe at any time.</p>
+          <p className="text-xs text-muted-foreground text-center">
+            We respect your privacy. You can unsubscribe anytime.
+          </p>
         </div>
       </Card>
     </div>
