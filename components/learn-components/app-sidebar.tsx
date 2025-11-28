@@ -58,16 +58,20 @@ export function DiscussionSidebar({
 
  
 
-  /* 🔥 Realtime updates */
-  React.useEffect(() => {
-    if (!courseId) return
+React.useEffect(() => {
+  if (!courseId) return;
 
-    const channel = subscribeToCourseThreads(courseId, (newThread) => {
-      setThreads((prev) => [newThread, ...prev])
-    })
+  const channel = subscribeToCourseThreads(courseId, (newThread) => {
+    setThreads((prev) => [newThread, ...prev]);
+  });
 
-    return () => channel.unsubscribe()
-  } , [courseId])
+  // cleanup must be sync
+  return () => {
+    // call async unsubscribe but don't return the Promise
+    channel.unsubscribe?.();
+  };
+}, [courseId]);
+
 
   const filteredThreads = threads.filter((t) =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase())
