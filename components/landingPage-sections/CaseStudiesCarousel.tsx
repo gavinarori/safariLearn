@@ -512,7 +512,7 @@ export const CaseStudiesCarousel = () => {
   }
   return (
     <div
-      className="w-full min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center py-24 px-8"
+      className="w-full min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center bg-white justify-center py-24 px-8"
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
