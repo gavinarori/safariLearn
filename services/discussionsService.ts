@@ -82,6 +82,36 @@ export async function createThread(courseId: string, userId: string, title: stri
   return data as DiscussionThread
 }
 
+export async function updateThread(threadId: string, userId: string, updates: {
+  title?: string
+  body?: string
+}) {
+  const { data, error } = await supabase
+    .from("discussion_threads")
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", threadId)
+    .eq("user_id", userId) 
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteThread(threadId: string, userId: string) {
+  const { error } = await supabase
+    .from("discussion_threads")
+    .delete()
+    .eq("id", threadId)
+    .eq("user_id", userId) 
+
+  if (error) throw error
+  return true
+}
+
 
 export async function getMessagesByThread(threadId: string) {
   const { data, error } = await supabase
