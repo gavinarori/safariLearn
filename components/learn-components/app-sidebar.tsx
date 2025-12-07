@@ -1,10 +1,17 @@
 "use client"
 
 import * as React from "react"
-import { MessageSquare, PlusCircle, Bookmark, User2, MessageCircle, Search } from "lucide-react"
-
-import { Sidebar } from "@/components/ui/sidebar"
+import { ArchiveX, Command, File, Inbox, PlusCircle, Search, Send, Trash2 } from "lucide-react"
+import { useAuth } from "@/contexts/auth"
 import {
+  getThreadsByCourseId,
+  type DiscussionThread,
+  createThread,
+} from "@/services/discussionsService"
+import { subscribeToCourseThreads } from "@/services/websocketService"
+import { Label } from "@/components/ui/label"
+import {
+  Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -16,7 +23,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -41,20 +47,26 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 
-import { NavUser } from "@/components/nav-user"
-import { useAuth } from "@/contexts/auth"
+import { Switch } from "@/components/ui/switch"
 
-import {
-  getThreadsByCourseId,
-  type DiscussionThread,
-  createThread,
-} from "@/services/discussionsService"
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  courseId?: any
+}
 
-import { subscribeToCourseThreads } from "@/services/websocketService"
 
-/* ------------------------------------------------------
-   New Thread Modal (Shadcn Dialog)
----------------------------------------------------------*/
+// This is sample data
+const data = {
+
+  navMain: [
+    {
+      title: "Inbox",
+      url: "#",
+      icon: Inbox,
+      isActive: true,
+    },
+  ],
+}
+
 function NewThreadModal({
   open,
   onClose,
@@ -108,9 +120,6 @@ function NewThreadModal({
   )
 }
 
-/* ------------------------------------------------------
-   Delete Confirmation (Shadcn AlertDialog)
----------------------------------------------------------*/
 function ConfirmDeleteDialog({
   open,
   onClose,
@@ -149,15 +158,40 @@ function ConfirmDeleteDialog({
   )
 }
 
-/* ------------------------------------------------------
-   MAIN SIDEBAR COMPONENT
----------------------------------------------------------*/
+export function AppSidebar({ courseId, ...props }: AppSidebarProps) {
+  // Note: I'm using state to show active item.
+  // IRL you should use the url/router.
+  const [activeItem, setActiveItem] = React.useState(data.navMain[0])
 
-export function DiscussionSidebar({ courseId }: { courseId: string }) {
-  const { user: currentUser } = useAuth()
+
+  const [threads, setThreads] = React.useState<any[]>([])
+    const [searchQuery, setSearchQuery] = React.useState("")
+  const [loading, setLoading] = React.useState(false)
+  const { user: currentUser }:any = useAuth()
+  const [newThreadModal, setNewThreadModal] = React.useState(false)
   const { setOpen } = useSidebar()
 
-  if (!currentUser) {
+  
+    // Fetch discussion threads
+  React.useEffect(() => {
+    if (!courseId) return
+
+    const load = async () => {
+      setLoading(true)
+      try {
+        const data = await getThreadsByCourseId(courseId)
+        setThreads(data)
+      } catch (err) {
+        console.error("Error loading discussion threads:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [courseId])
+
+    if (!currentUser) {
     return (
       <div className="p-4 text-muted-foreground text-sm">
         Please sign in to access discussions.
@@ -165,116 +199,106 @@ export function DiscussionSidebar({ courseId }: { courseId: string }) {
     )
   }
 
-  const [activeTab, setActiveTab] = React.useState("threads")
-  const [threads, setThreads] = React.useState<DiscussionThread[]>([])
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [newThreadModal, setNewThreadModal] = React.useState(false)
-
-  /* Load threads */
-  async function loadThreads() {
-    const data = await getThreadsByCourseId(courseId)
-    setThreads(data)
+  const formatTime = (iso: string) => {
+    const date = new Date(iso)
+    return date.toLocaleDateString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      month: "short",
+      day: "numeric",
+    })
   }
 
-  React.useEffect(() => {
-    if (courseId) loadThreads()
-  }, [courseId])
-
-  /* Real-time thread subscription */
-  React.useEffect(() => {
-    if (!courseId) return
-    const channel = subscribeToCourseThreads(courseId, (t) => {
-      setThreads((prev) => [t, ...prev])
-    })
-    return () => channel.unsubscribe?.()
-  }, [courseId])
-
-  const filteredThreads = threads.filter((t) =>
+    const filteredThreads = threads.filter((t) =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const navMenu = [
-    { title: "All Threads", value: "threads", icon: MessageSquare },
-    { title: "My Posts", value: "myposts", icon: User2 },
-    { title: "Bookmarked", value: "bookmarks", icon: Bookmark },
-  ]
-
-  /* Create Thread Handler */
   async function handleCreateThread(title: string, body: string) {
     await createThread(courseId, currentUser.id, title, body)
     setNewThreadModal(false)
   }
-
   return (
-    <>
-      {/* New Thread Modal */}
-      <NewThreadModal
+    <Sidebar
+      collapsible="icon"
+      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+      {...props}
+    >
+
+            <NewThreadModal
         open={newThreadModal}
         onClose={() => setNewThreadModal(false)}
         onSubmit={handleCreateThread}
       />
-
-      {/* Sidebar Layout */}
-      <Sidebar collapsible="icon" className="overflow-hidden ">
-        {/* ---- Left Icon Section ---- */}
-        <Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
-          <SidebarHeader className="p-3">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton size="lg" className="flex flex-col items-center gap-1">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white">
-                    <MessageCircle className="h-4 w-4" />
+      {/* This is the first sidebar */}
+      {/* We disable collapsible and adjust width to icon. */}
+      {/* This will make the sidebar appear as icons. */}
+      <Sidebar
+        collapsible="none"
+        className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+      >
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+                <a href="#">
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <Command className="size-4" />
                   </div>
-                  <span className="text-xs font-medium">Discussions</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarHeader>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">Acme Inc</span>
+                    <span className="truncate text-xs">Enterprise</span>
+                  </div>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent className="px-1.5 md:px-0">
+              <SidebarMenu>
+                {data.navMain.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      tooltip={{
+                        children: item.title,
+                        hidden: false,
+                      }}
+                      onClick={() => {
+                      }}
+                      isActive={activeItem?.title === item.title}
+                      className="px-2.5 md:px-2"
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
 
-          <SidebarContent>
-            <SidebarMenu>
-              {navMenu.map((item) => (
-                <SidebarMenuItem key={item.value}>
-                  <SidebarMenuButton
-                    tooltip={item.title}
-                    isActive={activeTab === item.value}
-                    onClick={() => {
-                      setActiveTab(item.value)
-                      setOpen(true)
-                    }}
-                  >
-                    <item.icon />
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
+      {/* This is the second sidebar */}
+      {/* We disable collapsible and let it fill remaining space */}
+      <Sidebar collapsible="none" className="hidden flex-1 md:flex">
+        <SidebarHeader className="gap-3.5 border-b p-4">
+          <div className="flex w-full items-center justify-between">
+            <div className="">
+              Course Discussions
+            </div>
 
-          <SidebarFooter>
-            <NavUser />
-          </SidebarFooter>
-        </Sidebar>
-
-        {/* ---- Main Discussion Panel ---- */}
-        <Sidebar collapsible="none" className="hidden flex-1 flex-col md:flex">
-          <SidebarHeader className="border-b p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">
-                {activeTab === "threads" && "All Threads"}
-                {activeTab === "myposts" && "My Posts"}
-                {activeTab === "bookmarks" && "Bookmarked"}
-              </h2>
-
-              <Button
+            <Button
                 className="flex items-center gap-2"
                 onClick={() => setNewThreadModal(true)}
               >
                 <PlusCircle className="h-4 w-4" />
                 New Thread
               </Button>
-            </div>
 
-            <div className="relative">
+          </div>
+          <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <SidebarInput
                 className="pl-10"
@@ -283,52 +307,46 @@ export function DiscussionSidebar({ courseId }: { courseId: string }) {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-          </SidebarHeader>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup className="px-0">
+            <SidebarGroupContent>
+                {loading && (
+                <p className="text-sm p-4 opacity-70">Loading discussions...</p>
+              )}
 
-          <SidebarContent className="overflow-y-auto">
-            <SidebarGroup>
-              <SidebarGroupContent>
-                {filteredThreads.length === 0 && (
-                  <div className="p-6 text-center text-sm text-muted-foreground">
-                    No threads yet. Be the first to start one!
+              {!loading && threads.length === 0 && (
+                <p className="text-sm p-4 opacity-70">No discussions yet.</p>
+              )}
+
+              {threads.map((thread) => (
+                <button
+                  key={thread.id}
+                  className="
+                    hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+                    flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight
+                    text-left w-full
+                  "
+                >
+                  <div className="flex w-full items-center gap-2">
+                    <span>{thread.user?.full_name || "Anonymous"}</span>
+                    <span className="ml-auto text-xs">
+                      {formatTime(thread.created_at)}
+                    </span>
                   </div>
-                )}
 
-                {filteredThreads.map((thread) => (
-                  <SidebarMenuItem key={thread.id}>
-                    <SidebarMenuButton
-                      asChild
-                      className="flex flex-col items-start gap-2 p-4 hover:bg-gray-50"
-                    >
-                      <a href={`/course/${courseId}/discussion/${thread.id}`}>
-                        <div className="flex w-full items-center gap-2">
-                          <span className="font-medium text-sm">{thread.title}</span>
-                          <span className="ml-auto text-xs text-muted-foreground">
-                            {new Date(thread.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
+                  <span className="font-medium">{thread.title}</span>
 
-                        <span className="text-xs text-muted-foreground line-clamp-2">
-                          {thread.body}
-                        </span>
+                  <span className="line-clamp-2 w-[260px] text-xs whitespace-break-spaces opacity-80">
+                    {thread.body}
+                  </span>
+                </button>
+              ))}
 
-                        {thread.user && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <img src={thread.user.avatar_url} className="h-5 w-5 rounded-full" />
-                            <span className="text-[11px] text-muted-foreground">
-                              {thread.user.full_name}
-                            </span>
-                          </div>
-                        )}
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
       </Sidebar>
-    </>
+    </Sidebar>
   )
 }

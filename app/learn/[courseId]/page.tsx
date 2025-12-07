@@ -12,7 +12,7 @@ import {
   ChevronUp,
 
 } from "lucide-react"
-import { DiscussionSidebar } from "@/components/learn-components/app-sidebar"
+import { AppSidebar } from "@/components/learn-components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import {
   SidebarInset,
@@ -203,7 +203,7 @@ export default function CoursePlayerPage() {
       } as React.CSSProperties
     }
   >
-    <DiscussionSidebar courseId={courseId} />
+    <AppSidebar courseId={courseId} />
 
     <SidebarInset className="flex flex-col min-h-screen bg-background">
 
