@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import { Switch } from "@/components/ui/switch"
+import { MessageNotesDialog } from "./message-notes-dialog"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   courseId?: any
@@ -170,6 +171,9 @@ export function AppSidebar({ courseId, ...props }: AppSidebarProps) {
   const { user: currentUser }:any = useAuth()
   const [newThreadModal, setNewThreadModal] = React.useState(false)
   const { setOpen } = useSidebar()
+const [threadDialogOpen, setThreadDialogOpen] = React.useState(false)
+const [selectedThread, setSelectedThread] = React.useState(null)
+
 
   
     // Fetch discussion threads
@@ -223,6 +227,14 @@ export function AppSidebar({ courseId, ...props }: AppSidebarProps) {
       className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
       {...props}
     >
+
+      
+
+<MessageNotesDialog
+  open={threadDialogOpen}
+  onOpenChange={setThreadDialogOpen}
+  thread={selectedThread}
+/>
 
             <NewThreadModal
         open={newThreadModal}
@@ -312,36 +324,36 @@ export function AppSidebar({ courseId, ...props }: AppSidebarProps) {
           <SidebarGroup className="px-0">
             <SidebarGroupContent>
                 {loading && (
-                <p className="text-sm p-4 opacity-70">Loading discussions...</p>
-              )}
+  <p className="text-sm p-4 opacity-70">Loading discussions...</p>
+)}
 
-              {!loading && threads.length === 0 && (
-                <p className="text-sm p-4 opacity-70">No discussions yet.</p>
-              )}
+{!loading && filteredThreads.length === 0 && (
+  <p className="text-sm p-4 opacity-70">No matching discussions.</p>
+)}
 
-              {threads.map((thread) => (
-                <button
-                  key={thread.id}
-                  className="
-                    hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
-                    flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight
-                    text-left w-full
-                  "
-                >
-                  <div className="flex w-full items-center gap-2">
-                    <span>{thread.user?.full_name || "Anonymous"}</span>
-                    <span className="ml-auto text-xs">
-                      {formatTime(thread.created_at)}
-                    </span>
-                  </div>
+{filteredThreads.map((thread) => (
+<button
+  key={thread.id}
+  onClick={() => {
+    setSelectedThread(thread)
+    setThreadDialogOpen(true)
+  }}
+  className="
+    hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+    flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight
+    text-left w-full
+  "
+>
+  <span className="font-medium">{thread.title}</span>
 
-                  <span className="font-medium">{thread.title}</span>
+  <span className="line-clamp-2 w-[260px] text-xs whitespace-break-spaces opacity-80">
+    {thread.body}
+  </span>
+</button>
 
-                  <span className="line-clamp-2 w-[260px] text-xs whitespace-break-spaces opacity-80">
-                    {thread.body}
-                  </span>
-                </button>
-              ))}
+))}
+
+
 
             </SidebarGroupContent>
           </SidebarGroup>
