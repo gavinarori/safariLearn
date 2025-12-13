@@ -15,8 +15,12 @@ import {
   Search,
   Bookmark,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
+
 
 import { getEnrolledCourses } from "@/services/coursesService"
+import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 const supabase = createClient()
 
@@ -36,6 +40,9 @@ export default function MyLearningPage() {
 
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
+
+  const router = useRouter()
+
 
   useEffect(() => {
     const fetchMyCourses = async () => {
@@ -114,6 +121,16 @@ export default function MyLearningPage() {
   }
 
   return (
+        <SidebarProvider
+          style={
+            {
+              "--sidebar-width": "calc(var(--spacing) * 72)",
+              "--header-height": "calc(var(--spacing) * 12)",
+            } as React.CSSProperties
+          }
+        >
+          <AppSidebar variant="inset" />
+          <SidebarInset>
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 lg:p-6">
         {/* Header */}
@@ -220,13 +237,18 @@ export default function MyLearningPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button size="sm" className="flex-1">
-                    {course.status === "not-started"
-                      ? "Start Course"
-                      : course.status === "completed"
-                      ? "Review Course"
-                      : "Continue Learning"}
-                  </Button>
+                  <Button
+  size="sm"
+  className="flex-1"
+  onClick={() => router.push(`/courses/${course.id}`)}
+>
+  {course.status === "not-started"
+    ? "Start Course"
+    : course.status === "completed"
+    ? "Review Course"
+    : "Continue Learning"}
+</Button>
+
 
                   <Button
                     size="sm"
@@ -257,5 +279,7 @@ export default function MyLearningPage() {
         )}
       </div>
     </div>
+          </SidebarInset>
+        </SidebarProvider>
   )
 }
