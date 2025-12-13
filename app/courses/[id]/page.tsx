@@ -298,7 +298,7 @@ const updated = await updateCalendarEvent(event.id, {
                       onEventAdd={handleEventAdd}
                       onEventUpdate={handleEventUpdate}
                       onEventDelete={handleEventDelete}
-                      initialView="day"
+                      initialView="month"
                     />
                   </SidebarProvider>
                 </div>
