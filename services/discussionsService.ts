@@ -151,6 +151,26 @@ export async function createMessage(
   return data as DiscussionMessage
 }
 
+export async function updateMessage(
+  messageId: string,
+  userId: string,
+  message: string
+) {
+  const { data, error } = await supabase
+    .from("discussion_messages")
+    .update({
+      message,
+    })
+    .eq("id", messageId)
+    .eq("user_id", userId) 
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as DiscussionMessage
+}
+
+
 export function subscribeToThreadMessages(threadId: string, onNewMessage: (msg: DiscussionMessage) => void) {
   return supabase
     .channel(`thread-${threadId}`)

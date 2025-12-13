@@ -76,6 +76,42 @@ export const getAllCourses = async (): Promise<CourseWithTrainer[]> => {
   }));
 };
 
+export const getEnrolledCourses = async (learnerId: string) => {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .select(`
+      id,
+      progress,
+      completed,
+      enrolled_at,
+
+      course:courses (
+        id,
+        title,
+        slug,
+        thumbnail_url,
+        category,
+        level,
+        price,
+        status,
+
+        trainer:users (
+          id,
+          full_name,
+          avatar_url
+        )
+      )
+    `)
+    .eq("learner_id", learnerId)
+    .order("enrolled_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching enrolled courses:", error);
+    return [];
+  }
+
+  return data;
+};
 
 // 🔹 Fetch courses by specific trainer
 export const getCoursesByTrainer = async (trainerId: string): Promise<CourseWithTrainer[]> => {
@@ -157,3 +193,84 @@ export const getCourseById = async (id: string): Promise<CourseWithTrainer | nul
 
   return { ...course, trainer };
 };
+
+
+export const markLessonCompleted = async (
+  enrollmentId: string,
+  lessonId: string
+) => {
+  const supabase = createClient()
+
+  // 1️⃣ Mark lesson as completed (idempotent)
+  const { error } = await supabase
+    .from("lesson_progress")
+    .upsert(
+      {
+        enrollment_id: enrollmentId,
+        lesson_id: lessonId,
+        is_completed: true,
+        completed_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "enrollment_id,lesson_id",
+      }
+    )
+
+  if (error) {
+    console.error("Error updating lesson progress:", error)
+    throw error
+  }
+}
+
+
+export const recalculateEnrollmentProgress = async (
+  enrollmentId: string
+) => {
+  const supabase = createClient()
+
+  // 1️⃣ Get completed lessons count
+  const { data: completedLessons } = await supabase
+    .from("lesson_progress")
+    .select("id")
+    .eq("enrollment_id", enrollmentId)
+    .eq("is_completed", true)
+
+  // 2️⃣ Get total lessons in course
+  const { data: enrollment } = await supabase
+    .from("enrollments")
+    .select(`
+      id,
+      course:courses (
+        id,
+        lessons:lessons ( id )
+      )
+    `)
+    .eq("id", enrollmentId)
+    .single()
+
+  const totalLessons = enrollment.course.lessons.length
+  const completedCount = completedLessons?.length ?? 0
+
+  const progress =
+    totalLessons === 0
+      ? 0
+      : Math.round((completedCount / totalLessons) * 100)
+
+  const completed = progress === 100
+
+  // 3️⃣ Update enrollment
+  const { error } = await supabase
+    .from("enrollments")
+    .update({
+      progress,
+      completed,
+    })
+    .eq("id", enrollmentId)
+
+  if (error) {
+    console.error("Error updating enrollment progress:", error)
+    throw error
+  }
+
+  return { progress, completed }
+}
