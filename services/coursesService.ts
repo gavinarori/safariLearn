@@ -194,14 +194,7 @@ export const getCourseById = async (id: string): Promise<CourseWithTrainer | nul
   return { ...course, trainer };
 };
 
-
-export const markLessonCompleted = async (
-  enrollmentId: string,
-  lessonId: string
-) => {
-  const supabase = createClient()
-
-  // 1️⃣ Mark lesson as completed (idempotent)
+export const markLessonCompleted = async (enrollmentId: string, lessonId: string) => {
   const { error } = await supabase
     .from("lesson_progress")
     .upsert(
@@ -211,31 +204,23 @@ export const markLessonCompleted = async (
         is_completed: true,
         completed_at: new Date().toISOString(),
       },
-      {
-        onConflict: "enrollment_id,lesson_id",
-      }
-    )
+      { onConflict: "enrollment_id,lesson_id" }
+    );
 
   if (error) {
-    console.error("Error updating lesson progress:", error)
-    throw error
+    console.error("Error updating lesson progress:", error);
+    throw error;
   }
-}
+};
 
-
-export const recalculateEnrollmentProgress = async (
-  enrollmentId: string
-) => {
-  const supabase = createClient()
-
-  // 1️⃣ Get completed lessons count
+// Recalculate enrollment progress
+export const recalculateEnrollmentProgress = async (enrollmentId: string) => {
   const { data: completedLessons } = await supabase
     .from("lesson_progress")
     .select("id")
     .eq("enrollment_id", enrollmentId)
-    .eq("is_completed", true)
+    .eq("is_completed", true);
 
-  // 2️⃣ Get total lessons in course
   const { data: enrollment } = await supabase
     .from("enrollments")
     .select(`
@@ -246,31 +231,56 @@ export const recalculateEnrollmentProgress = async (
       )
     `)
     .eq("id", enrollmentId)
-    .single()
+    .single();
 
-  const totalLessons = enrollment.course.lessons.length
-  const completedCount = completedLessons?.length ?? 0
+  const totalLessons = enrollment.course.lessons.length;
+  const completedCount = completedLessons?.length ?? 0;
+  const progress = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
+  const completed = progress === 100;
 
-  const progress =
-    totalLessons === 0
-      ? 0
-      : Math.round((completedCount / totalLessons) * 100)
-
-  const completed = progress === 100
-
-  // 3️⃣ Update enrollment
   const { error } = await supabase
     .from("enrollments")
-    .update({
-      progress,
-      completed,
-    })
-    .eq("id", enrollmentId)
+    .update({ progress, completed })
+    .eq("id", enrollmentId);
 
   if (error) {
-    console.error("Error updating enrollment progress:", error)
-    throw error
+    console.error("Error updating enrollment progress:", error);
+    throw error;
   }
 
-  return { progress, completed }
-}
+  return { progress, completed };
+};
+
+
+export const fetchEnrollmentId = async (learnerId: string, courseId: string) => {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .select("id")
+    .eq("learner_id", learnerId)
+    .eq("course_id", courseId)
+    .single();
+
+  if (error) {
+    console.error("Error fetching enrollment ID:", error);
+    return null;
+  }
+  return data.id;
+};
+
+export const fetchEnrollment = async (learnerId: string, courseId: string) => {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .select(`
+      id,
+      lesson_progress:lesson_progress ( lesson_id, is_completed )
+    `)
+    .eq("learner_id", learnerId)
+    .eq("course_id", courseId)
+    .single();
+
+  if (error) {
+    console.error("Error fetching enrollment:", error);
+    return null;
+  }
+  return data;
+};
