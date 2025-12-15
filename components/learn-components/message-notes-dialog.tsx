@@ -20,7 +20,7 @@ import type { DiscussionMessage } from "@/services/discussionsService"
 import { useAuth } from "@/contexts/auth"
 
 export function MessageNotesDialog({ open, onOpenChange, thread }: any) {
-  const { user } = useAuth()
+  const { user }:any = useAuth()
 
   const [messages, setMessages] = React.useState<DiscussionMessage[]>([])
   const [notes, setNotes] = React.useState("")

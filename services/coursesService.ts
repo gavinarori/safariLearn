@@ -233,7 +233,7 @@ export const recalculateEnrollmentProgress = async (enrollmentId: string) => {
     .eq("id", enrollmentId)
     .single();
 
-  const totalLessons = enrollment.course.lessons.length;
+  const totalLessons = enrollment?.course?.[0]?.lessons?.length ?? 0;
   const completedCount = completedLessons?.length ?? 0;
   const progress = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
   const completed = progress === 100;

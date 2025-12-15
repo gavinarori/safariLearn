@@ -35,6 +35,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import {
+  IconInnerShadowTop,
+} from "@tabler/icons-react"
 
 import {
   AlertDialog,
@@ -203,15 +206,6 @@ const [selectedThread, setSelectedThread] = React.useState(null)
     )
   }
 
-  const formatTime = (iso: string) => {
-    const date = new Date(iso)
-    return date.toLocaleDateString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      month: "short",
-      day: "numeric",
-    })
-  }
 
     const filteredThreads = threads.filter((t) =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -252,15 +246,12 @@ const [selectedThread, setSelectedThread] = React.useState(null)
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                <a href="#">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Command className="size-4" />
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">Acme Inc</span>
-                    <span className="truncate text-xs">Enterprise</span>
-                  </div>
-                </a>
+               
+                <a href="/dashboard" className="flex items-center gap-2 font-medium">
+            <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
+              <IconInnerShadowTop className="size-4" />
+            </div>
+          </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

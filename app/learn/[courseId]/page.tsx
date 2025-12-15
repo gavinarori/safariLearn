@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,24 +29,24 @@ import {
   VideoPlayerTimeDisplay,
   VideoPlayerTimeRange,
   VideoPlayerVolumeRange,
-} from '@/components/ui/shadcn-io/video-player';
+} from "@/components/ui/shadcn-io/video-player"
 import { LessonsService } from "@/services/lessonsService"
 import { useAuth } from "@/contexts/auth"
 import {
   markLessonCompleted,
   recalculateEnrollmentProgress,
 } from "@/services/coursesService"
+import { createClient } from "@/superbase/client"
+
+const supabase = createClient()
 
 type LessonRow = {
   id: string
   course_id: string
   title: string
   video_url?: string | null
-  content?: string | null
   order_index?: number | null
   duration?: number | null
-  is_preview?: boolean | null
-  created_at?: string | null
 }
 
 type UIPlayLesson = {
@@ -57,98 +57,82 @@ type UIPlayLesson = {
   duration: string
   completed: boolean
   video_url?: string | null
-  content?: string | null
+  resumeAt?: number
 }
 
 export default function CoursePlayerPage() {
   const { courseId } = useParams() as { courseId?: string }
   const { user } = useAuth()
+
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+
   const [lessons, setLessons] = useState<LessonRow[]>([])
+  const [currentLesson, setCurrentLesson] = useState<UIPlayLesson | null>(null)
+  const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({})
+  const [lessonProgress, setLessonProgress] = useState<Record<string, any>>({})
+  const [expandedWeeks, setExpandedWeeks] = useState<Record<number, boolean>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [currentLesson, setCurrentLesson] = useState<UIPlayLesson | null>(null)
-  const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({})
-  const [expandedWeeks, setExpandedWeeks] = useState<Record<number, boolean>>({})
-
   if (!user) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p>Please log in to view this course.</p>
-      </div>
-    )
+    return <div className="flex items-center justify-center min-h-screen">Login required</div>
   }
 
-  // Convert DB lesson row -> UI lesson
   const mapToUILesson = (l: LessonRow): UIPlayLesson => {
     const order = l.order_index ?? 1
-    const week = Math.max(1, Math.ceil((order as number) / 5))
-    const number = order
-    const dur =
-      typeof l.duration === "number" ? formatDurationMinutes(l.duration) : (l.duration ? String(l.duration) : "0:00")
-
+    const week = Math.max(1, Math.ceil(order / 5))
     return {
       id: l.id,
       week,
-      number,
+      number: order,
       title: l.title,
-      duration: dur,
-      completed: Boolean(completedLessons[l.id]),
-      video_url: l.video_url ?? null,
-      content: l.content ?? null,
+      duration: formatDurationMinutes(l.duration),
+      completed: !!completedLessons[l.id],
+      video_url: l.video_url,
+      resumeAt: lessonProgress[l.id]?.last_position ?? 0,
     }
   }
 
   const groupedLessons = useMemo(() => {
-    const uiLessons = lessons.map(mapToUILesson)
     const grouped: Record<number, UIPlayLesson[]> = {}
-    uiLessons.forEach((ls) => {
-      if (!grouped[ls.week]) grouped[ls.week] = []
-      grouped[ls.week].push(ls)
-    })
-    Object.keys(grouped).forEach((k) => {
-      grouped[Number(k)].sort((a, b) => a.number - b.number)
+    lessons.map(mapToUILesson).forEach((l) => {
+      grouped[l.week] ??= []
+      grouped[l.week].push(l)
     })
     return grouped
-  }, [lessons, completedLessons])
+  }, [lessons, completedLessons, lessonProgress])
 
-  const weeks = useMemo(() => Object.keys(groupedLessons).map(Number).sort((a, b) => a - b), [groupedLessons])
+  const weeks = Object.keys(groupedLessons).map(Number).sort((a, b) => a - b)
 
-  // Fetch lessons and enrollment progress
   useEffect(() => {
     if (!courseId || !user) return
 
     const load = async () => {
       try {
         setLoading(true)
-        setError(null)
 
-        // 1️⃣ Get lessons
-        const data = await LessonsService.getLessonsByCourse(courseId)
-        if (!data || data.length === 0) {
-          setLessons([])
-          setCurrentLesson(null)
-          return
-        }
+        const lessonData = await LessonsService.getLessonsByCourse(courseId)
+        const enrollment = await fetchEnrollment(user.id, courseId)
 
-        const sorted = [...data].sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0))
-        setLessons(sorted)
+        const completed: Record<string, boolean> = {}
+        const progress: Record<string, any> = {}
 
-        // 2️⃣ Load lesson progress
-        const completedIds: Record<string, boolean> = {}
-        const enrollmentData = await fetchEnrollment(user.id, courseId)
-        enrollmentData?.lesson_progress?.forEach((lp: any) => {
-          if (lp.is_completed) completedIds[lp.lesson_id] = true
+        enrollment?.lesson_progress?.forEach((lp: any) => {
+          if (lp.is_completed) completed[lp.lesson_id] = true
+          progress[lp.lesson_id] = lp
         })
-        setCompletedLessons(completedIds)
 
-        // 3️⃣ Default current lesson -> first not completed
-        const first = sorted.find(l => !completedIds[l.id]) || sorted[0]
+        setLessons(lessonData)
+        setCompletedLessons(completed)
+        setLessonProgress(progress)
+
+        const first =
+          lessonData.find((l) => !completed[l.id]) || lessonData[0]
+
         setCurrentLesson(mapToUILesson(first))
-        setExpandedWeeks(prev => ({ ...prev, [mapToUILesson(first).week]: true }))
-      } catch (err: any) {
-        console.error("Failed to load lessons:", err)
-        setError(err?.message ?? "Failed to load lessons")
+        setExpandedWeeks({ [Math.ceil((first.order_index ?? 1) / 5)]: true })
+      } catch (e: any) {
+        setError(e.message)
       } finally {
         setLoading(false)
       }
@@ -157,33 +141,54 @@ export default function CoursePlayerPage() {
     load()
   }, [courseId, user])
 
-  // Mark lesson complete
-  const toggleLessonComplete = async (lessonId: string) => {
-    if (!currentLesson || !user) return
+  useEffect(() => {
+    if (videoRef.current && currentLesson?.resumeAt) {
+      videoRef.current.currentTime = currentLesson.resumeAt
+    }
+  }, [currentLesson])
 
-    const isCompleted = !completedLessons[lessonId]
+  useEffect(() => {
+    if (!videoRef.current || !currentLesson) return
 
-    setCompletedLessons(prev => ({ ...prev, [lessonId]: isCompleted }))
-    if (currentLesson.id === lessonId) {
-      setCurrentLesson({ ...currentLesson, completed: isCompleted })
+    const video = videoRef.current
+
+    const interval = setInterval(async () => {
+      const enrollmentId = await fetchEnrollmentId(user.id, courseId!)
+      if (!enrollmentId) return
+
+      await supabase.from("lesson_progress").upsert(
+        {
+          enrollment_id: enrollmentId,
+          lesson_id: currentLesson.id,
+          last_position: Math.floor(video.currentTime),
+          duration: Math.floor(video.duration),
+        },
+        { onConflict: "enrollment_id,lesson_id" }
+      )
+    }, 5000)
+
+    const onEnded = async () => {
+      const enrollmentId = await fetchEnrollmentId(user.id, courseId!)
+      if (!enrollmentId) return
+
+      await markLessonCompleted(enrollmentId, currentLesson.id)
+      await recalculateEnrollmentProgress(enrollmentId)
+
+      setCompletedLessons((p) => ({ ...p, [currentLesson.id]: true }))
+      setCurrentLesson((p) => p && { ...p, completed: true })
     }
 
-    try {
-      // 1️⃣ Save lesson progress
-      const enrollmentId = await fetchEnrollmentId(user.id, courseId)
-      if (enrollmentId) {
-        await markLessonCompleted(enrollmentId, lessonId)
-        await recalculateEnrollmentProgress(enrollmentId)
-      }
-    } catch (err) {
-      console.error("Failed to mark lesson complete:", err)
+    video.addEventListener("ended", onEnded)
+
+    return () => {
+      clearInterval(interval)
+      video.removeEventListener("ended", onEnded)
     }
-  }
+  }, [currentLesson])
 
-  // Handle lesson selection
-  const handleSelectLesson = (lesson: UIPlayLesson) => setCurrentLesson(lesson)
+    const handleSelectLesson = (lesson: UIPlayLesson) => setCurrentLesson(lesson)
 
-  if (loading)
+ if (loading)
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="loader">Loading lessons…</div>
@@ -205,6 +210,8 @@ export default function CoursePlayerPage() {
       </div>
     )
 
+
+
   return (
     <SidebarProvider style={{ "--sidebar-width": "350px" } as React.CSSProperties}>
       <AppSidebar courseId={courseId} />
@@ -224,6 +231,7 @@ export default function CoursePlayerPage() {
                   muted
                   preload="auto"
                   slot="media"
+                  ref={videoRef}
                   src={currentLesson.video_url || ""}
                 />
                 <VideoPlayerControlBar>
@@ -300,7 +308,6 @@ export default function CoursePlayerPage() {
 
                 <div className="flex flex-wrap gap-4">
                   <Button
-                    onClick={() => currentLesson && toggleLessonComplete(currentLesson.id)}
                     variant={currentLesson?.completed ? "default" : "outline"}
                   >
                     <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -321,36 +328,29 @@ export default function CoursePlayerPage() {
   )
 }
 
-// --- HELPERS ---
 function formatDurationMinutes(mins?: number | null) {
-  if (!mins || isNaN(Number(mins))) return "0:00"
-  const total = Math.floor(Number(mins))
-  const mm = total % 60
-  const hh = Math.floor(total / 60)
-  if (hh > 0) return `${hh}:${String(mm).padStart(2, "0")}`
-  return `${mm}:00`
+  if (!mins) return "0:00"
+  const m = Math.floor(mins % 60)
+  const h = Math.floor(mins / 60)
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}` : `${m}:00`
 }
 
-// --- MOCK/HELPERS: fetch enrollmentId & lesson_progress ---
-async function fetchEnrollmentId(userId: string, courseId: string): Promise<string | null> {
-  const { data } = await import("@/services/coursesService")
-  const supabase = (await import("@/superbase/client")).createClient()
-  const { data: enrollment } = await supabase
+async function fetchEnrollment(userId: string, courseId: string) {
+  const { data } = await supabase
+    .from("enrollments")
+    .select("id, lesson_progress(*)")
+    .eq("learner_id", userId)
+    .eq("course_id", courseId)
+    .single()
+  return data
+}
+
+async function fetchEnrollmentId(userId: string, courseId: string) {
+  const { data } = await supabase
     .from("enrollments")
     .select("id")
     .eq("learner_id", userId)
     .eq("course_id", courseId)
     .single()
-  return enrollment?.id ?? null
-}
-
-async function fetchEnrollment(userId: string, courseId: string) {
-  const supabase = (await import("@/superbase/client")).createClient()
-  const { data: enrollment } = await supabase
-    .from("enrollments")
-    .select("id, lesson_progress(id, lesson_id, is_completed)")
-    .eq("learner_id", userId)
-    .eq("course_id", courseId)
-    .single()
-  return enrollment
+  return data?.id ?? null
 }
