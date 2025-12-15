@@ -1,21 +1,20 @@
 import { createClient } from "@/superbase/client";
 
-// 🧩 Types
 export type Course = {
   id: string;
-  trainer_id: string | null;
+  trainer_id: string;
   title: string;
   slug: string;
   description: string | null;
   thumbnail_url: string | null;
+  trailer_url: string | null;
   price: number | null;
   category: string | null;
   level: string | null;
   language: string | null;
-  status: string | null;
+  status: "draft" | "published" | "archived";
   created_at: string;
   updated_at: string | null;
-  trailer_url: string | null;
 };
 
 export type Trainer = {
@@ -33,7 +32,113 @@ export type CourseWithTrainer = Course & {
 const supabase = createClient();
 
 
-// 🔹 Utility: Fetch multiple trainers by ID
+export const uploadCourseThumbnail = async (
+  trainerId: string,
+  file: File
+) => {
+  const filePath = `course-thumbnails/${trainerId}/${Date.now()}-${file.name}`;
+
+  const { error } = await supabase.storage
+    .from("course-assets")
+    .upload(filePath, file, { upsert: true });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from("course-assets")
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
+};
+
+export const createCourse = async (payload: {
+  trainer_id: string;
+  title: string;
+  slug: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  level?: string;
+  language?: string;
+  thumbnail_url?: string;
+  trailer_url?: string;
+}) => {
+  const { data, error } = await supabase
+    .from("courses")
+    .insert({
+      ...payload,
+      status: "draft",
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateCourse = async (
+  courseId: string,
+  trainerId: string,
+  updates: Partial<Omit<Course, "id" | "trainer_id" | "created_at">>
+) => {
+  const { data, error } = await supabase
+    .from("courses")
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", courseId)
+    .eq("trainer_id", trainerId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const publishCourse = async (courseId: string, trainerId: string) => {
+  const { data, error } = await supabase
+    .from("courses")
+    .update({
+      status: "published",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", courseId)
+    .eq("trainer_id", trainerId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const archiveCourse = async (courseId: string, trainerId: string) => {
+  const { data, error } = await supabase
+    .from("courses")
+    .update({
+      status: "archived",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", courseId)
+    .eq("trainer_id", trainerId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getTrainerCourses = async (trainerId: string) => {
+  const { data, error } = await supabase
+    .from("courses")
+    .select("*")
+    .eq("trainer_id", trainerId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+};
+
 const getTrainersByIds = async (trainerIds: string[]): Promise<Trainer[]> => {
   if (trainerIds.length === 0) return [];
 
@@ -51,7 +156,7 @@ const getTrainersByIds = async (trainerIds: string[]): Promise<Trainer[]> => {
 };
 
 
-// 🔹 Fetch all courses (with trainer details)
+
 export const getAllCourses = async (): Promise<CourseWithTrainer[]> => {
   const { data: courses, error } = await supabase
     .from("courses")
@@ -69,7 +174,7 @@ export const getAllCourses = async (): Promise<CourseWithTrainer[]> => {
   const trainerIds = [...new Set(courses.map(c => c.trainer_id).filter(Boolean))] as string[];
   const trainers = await getTrainersByIds(trainerIds);
 
-  // Merge trainer info
+
   return courses.map(course => ({
     ...course,
     trainer: trainers.find(t => t.id === course.trainer_id) || null,
@@ -113,7 +218,7 @@ export const getEnrolledCourses = async (learnerId: string) => {
   return data;
 };
 
-// 🔹 Fetch courses by specific trainer
+
 export const getCoursesByTrainer = async (trainerId: string): Promise<CourseWithTrainer[]> => {
   const { data: courses, error } = await supabase
     .from("courses")
@@ -137,7 +242,6 @@ export const getCoursesByTrainer = async (trainerId: string): Promise<CourseWith
 };
 
 
-// 🔹 Fetch courses by category (with trainer info)
 export const getCoursesByCategory = async (category: string): Promise<CourseWithTrainer[]> => {
   const { data: courses, error } = await supabase
     .from("courses")
@@ -163,7 +267,7 @@ export const getCoursesByCategory = async (category: string): Promise<CourseWith
 };
 
 
-// 🔹 Fetch a single course by ID (with trainer info)
+
 export const getCourseById = async (id: string): Promise<CourseWithTrainer | null> => {
   const { data: course, error } = await supabase
     .from("courses")
@@ -213,7 +317,7 @@ export const markLessonCompleted = async (enrollmentId: string, lessonId: string
   }
 };
 
-// Recalculate enrollment progress
+
 export const recalculateEnrollmentProgress = async (enrollmentId: string) => {
   const { data: completedLessons } = await supabase
     .from("lesson_progress")

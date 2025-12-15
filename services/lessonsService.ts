@@ -1,6 +1,26 @@
 import { createClient } from "@/superbase/client";
 
 const supabase = createClient();
+export const uploadLessonVideo = async (
+  trainerId: string,
+  courseId: string,
+  file: File
+) => {
+  const filePath = `lesson-videos/${trainerId}/${courseId}/${Date.now()}-${file.name}`;
+
+  const { error } = await supabase.storage
+    .from("course-assets")
+    .upload(filePath, file, { upsert: true });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from("course-assets")
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
+};
+
 
 export const LessonsService = {
 
