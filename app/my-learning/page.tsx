@@ -175,8 +175,8 @@ export default function MyLearningPage() {
         </div>
 
         {/* Search & Filter */}
-        <Card className="mb-6">
-          <CardContent className="p-6 flex flex-col md:flex-row gap-4">
+        <div className="mb-6">
+          <div className="p-6 flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -201,13 +201,13 @@ export default function MyLearningPage() {
                 )
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Courses Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((course) => (
-            <Card key={course.id} className="overflow-hidden">
+            <div key={course.id} className="overflow-hidden">
               <div className="aspect-video bg-muted relative">
                 <img
                   src={course.thumbnail || "/placeholder.svg"}
@@ -223,7 +223,7 @@ export default function MyLearningPage() {
                 )}
               </div>
 
-              <CardContent className="p-4">
+              <div className="p-4">
                 <h3 className="font-bold mb-1">{course.title}</h3>
                 <p className="text-sm text-muted-foreground mb-3">
                   {course.instructor}
@@ -262,8 +262,8 @@ export default function MyLearningPage() {
                     />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
 
