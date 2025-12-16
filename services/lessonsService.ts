@@ -1,25 +1,31 @@
 import { createClient } from "@/superbase/client";
+import { uploadFileToStorage } from "./storage.service"
 
 const supabase = createClient();
+
+
 export const uploadLessonVideo = async (
   trainerId: string,
   courseId: string,
   file: File
 ) => {
-  const filePath = `lesson-videos/${trainerId}/${courseId}/${Date.now()}-${file.name}`;
+  const path = `lesson-videos/${trainerId}/${courseId}/${Date.now()}-${file.name}`
 
-  const { error } = await supabase.storage
-    .from("course-assets")
-    .upload(filePath, file, { upsert: true });
+  return uploadFileToStorage({
+    bucket: "course-assets",
+    path,
+    file,
+  })
+}
 
-  if (error) throw error;
+export const publishLessonsByCourse = async (courseId: string) => {
+  const { error } = await supabase
+    .from("lessons")
+    .update({ status: "published" })
+    .eq("course_id", courseId)
 
-  const { data } = supabase.storage
-    .from("course-assets")
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
-};
+  if (error) throw error
+}
 
 
 export const LessonsService = {
@@ -66,6 +72,8 @@ export const LessonsService = {
     if (error) throw error;
     return data;
   },
+
+  
 
 
   async updateLesson(id: string, updates: Partial<{
