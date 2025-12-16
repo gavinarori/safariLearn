@@ -1,4 +1,5 @@
 import { createClient } from "@/superbase/client";
+import { uploadFileToStorage } from "./storage.service";
 
 export type Course = {
   id: string;
@@ -36,20 +37,15 @@ export const uploadCourseThumbnail = async (
   trainerId: string,
   file: File
 ) => {
-  const filePath = `course-thumbnails/${trainerId}/${Date.now()}-${file.name}`;
+  const path = `course-thumbnails/${trainerId}/${Date.now()}-${file.name}`
 
-  const { error } = await supabase.storage
-    .from("course-assets")
-    .upload(filePath, file, { upsert: true });
+  return uploadFileToStorage({
+    bucket: "course-assets",
+    path,
+    file,
+  })
+}
 
-  if (error) throw error;
-
-  const { data } = supabase.storage
-    .from("course-assets")
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
-};
 
 export const createCourse = async (payload: {
   trainer_id: string;

@@ -1,9 +1,15 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { IconTrash, IconPlus, IconGripVertical, IconUpload } from "@tabler/icons-react"
+import {
+  IconTrash,
+  IconPlus,
+  IconGripVertical,
+  IconUpload,
+  IconVideo,
+} from "@tabler/icons-react"
+
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,237 +17,338 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { DragDropZone } from "@/components/ drag-drop-zone"
 
+import {
+  createCourse,
+  publishCourse,
+  uploadCourseThumbnail,
+} from "@/services/coursesService"
+
+import {
+  LessonsService,
+  uploadLessonVideo,
+} from "@/services/lessonsService"
+
+import { createClient } from "@/superbase/client"
+import { TrainerCoursesGrid } from "./TrainerCoursesGrid"
+
+const supabase = createClient()
+
+// =======================
+// TYPES
+// =======================
+
 interface Lesson {
   id: string
   title: string
   type: "video" | "pdf" | "quiz"
-  file?: string
+  video_url?: string
+  order_index: number
 }
 
-interface Course {
-  title: string
-  description: string
-  thumbnail: string
-  pricing: string
-  lessons: Lesson[]
-}
+// =======================
+// COMPONENT
+// =======================
 
 export function CourseBuilderForm() {
-  const [course, setCourse] = useState<Course>({
+  const [courseId, setCourseId] = useState<string | null>(null)
+  const [trainerId, setTrainerId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const [course, setCourse] = useState({
     title: "",
     description: "",
-    thumbnail: "/course-thumbnail.png",
     pricing: "",
-    lessons: [],
+    thumbnail: "",
+    lessons: [] as Lesson[],
   })
 
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  // =======================
+  // AUTH
+  // =======================
 
-  const handleAddLesson = () => {
-    const newLesson: Lesson = {
-      id: Date.now().toString(),
+  const initTrainer = async () => {
+    const { data } = await supabase.auth.getUser()
+    if (!data.user) throw new Error("Not authenticated")
+    setTrainerId(data.user.id)
+    return data.user.id
+  }
+
+  // =======================
+  // COURSE
+  // =======================
+
+  const handleCreateCourse = async () => {
+    if (!course.title) return alert("Course title required")
+
+    setLoading(true)
+    const uid = trainerId ?? (await initTrainer())
+
+    const created = await createCourse({
+      trainer_id: uid,
+      title: course.title,
+      slug: course.title.toLowerCase().replace(/\s+/g, "-"),
+      description: course.description,
+      price: Number(course.pricing) || 0,
+    })
+
+    setCourseId(created.id)
+    setLoading(false)
+  }
+
+
+
+  // =======================
+  // THUMBNAIL
+  // =======================
+
+  const handleThumbnailUpload = async (file: File) => {
+    if (!trainerId || !courseId) return
+
+    const url = await uploadCourseThumbnail(trainerId, file)
+
+    await supabase
+      .from("courses")
+      .update({ thumbnail_url: url })
+      .eq("id", courseId)
+
+    setCourse((prev) => ({ ...prev, thumbnail: url }))
+  }
+
+  // =======================
+  // LESSONS
+  // =======================
+
+  const handleAddLesson = async () => {
+    if (!courseId) return alert("Create course first")
+
+    const order_index = course.lessons.length + 1
+
+    const lesson = await LessonsService.createLesson({
+      course_id: courseId,
       title: "New Lesson",
-      type: "video",
-    }
-    setCourse({
-      ...course,
-      lessons: [...course.lessons, newLesson],
+      order_index,
+      is_preview: false,
     })
+
+    setCourse((prev) => ({
+      ...prev,
+      lessons: [
+        ...prev.lessons,
+        {
+          id: lesson.id,
+          title: lesson.title,
+          type: "video",
+          order_index,
+        },
+      ],
+    }))
   }
 
-  const handleDeleteLesson = (id: string) => {
-    setCourse({
-      ...course,
-      lessons: course.lessons.filter((lesson) => lesson.id !== id),
-    })
+  const handleDeleteLesson = async (lessonId: string) => {
+    await LessonsService.deleteLesson(lessonId)
+
+    setCourse((prev) => ({
+      ...prev,
+      lessons: prev.lessons.filter((l) => l.id !== lessonId),
+    }))
   }
 
-  const handleUpdateLesson = (id: string, updates: Partial<Lesson>) => {
-    setCourse({
-      ...course,
-      lessons: course.lessons.map((lesson) => (lesson.id === id ? { ...lesson, ...updates } : lesson)),
-    })
+  const handleUpdateLesson = async (
+    lessonId: string,
+    updates: Partial<Lesson>
+  ) => {
+    await LessonsService.updateLesson(lessonId, updates)
+
+    setCourse((prev) => ({
+      ...prev,
+      lessons: prev.lessons.map((l) =>
+        l.id === lessonId ? { ...l, ...updates } : l
+      ),
+    }))
   }
 
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index)
+  const handleLessonVideoUpload = async (lessonId: string, file: File) => {
+    if (!trainerId || !courseId) return
+
+    const url = await uploadLessonVideo(trainerId, courseId, file)
+    await handleUpdateLesson(lessonId, { video_url: url })
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
+  const handlePublishCourse = async () => {
+  if (!courseId) return
+  const uid = trainerId ?? (await initTrainer())
+
+  // 1️⃣ Validate lessons
+  if (course.lessons.length === 0) {
+    return alert("Add at least one lesson before publishing")
   }
 
-  const handleDrop = (index: number) => {
-    if (draggedIndex === null || draggedIndex === index) return
+  const missingVideo = course.lessons.find(
+    (l) => l.type === "video" && !l.video_url
+  )
 
-    const newLessons = [...course.lessons]
-    const [draggedLesson] = newLessons.splice(draggedIndex, 1)
-    newLessons.splice(index, 0, draggedLesson)
-
-    setCourse({
-      ...course,
-      lessons: newLessons,
-    })
-    setDraggedIndex(null)
+  if (missingVideo) {
+    return alert("All video lessons must have a video uploaded")
   }
+
+  // 2️⃣ Validate thumbnail
+  if (!course.thumbnail) {
+    return alert("Upload a course thumbnail before publishing")
+  }
+
+  setLoading(true)
+
+  try {
+    // 3️⃣ Publish lessons
+    await LessonsService.publishLessonsByCourse(courseId)
+
+    // 4️⃣ Publish course
+    await publishCourse(courseId, uid)
+
+    alert("Course & lessons published successfully 🎉")
+  } catch (err) {
+    console.error(err)
+    alert("Failed to publish course")
+  } finally {
+    setLoading(false)
+  }
+}
+
+
+  // =======================
+  // UI
+  // =======================
 
   return (
     <div className="space-y-6 p-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Create New Course</h1>
-        <p className="text-muted-foreground">Build and publish your course with our intuitive builder</p>
-      </div>
+      {/* EXISTING COURSES */}
+      <TrainerCoursesGrid
+        onEdit={(id) => setCourseId(id)}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Course Details */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="p-6 space-y-4">
-            <div>
-              <Label htmlFor="title" className="text-base font-semibold">
-                Course Title
-              </Label>
-              <Input
-                id="title"
-                placeholder="Enter course title"
-                value={course.title}
-                onChange={(e) => setCourse({ ...course, title: e.target.value })}
-                className="mt-2"
-              />
-            </div>
+      <h1 className="text-3xl font-bold">Create / Edit Course</h1>
 
-            <div>
-              <Label htmlFor="description" className="text-base font-semibold">
-                Course Description
-              </Label>
-              <Textarea
-                id="description"
-                placeholder="Describe what students will learn"
-                value={course.description}
-                onChange={(e) => setCourse({ ...course, description: e.target.value })}
-                className="mt-2 min-h-24"
-              />
-            </div>
+      {/* COURSE DETAILS */}
+      <Card className="p-6 space-y-4">
+        <Label>Course Title</Label>
+        <Input
+          value={course.title}
+          onChange={(e) =>
+            setCourse({ ...course, title: e.target.value })
+          }
+        />
 
-            <div>
-              <Label htmlFor="pricing" className="text-base font-semibold">
-                Pricing ($)
-              </Label>
-              <Input
-                id="pricing"
-                type="number"
-                placeholder="0.00"
-                value={course.pricing}
-                onChange={(e) => setCourse({ ...course, pricing: e.target.value })}
-                className="mt-2"
-              />
-            </div>
-          </Card>
+        <Label>Description</Label>
+        <Textarea
+          value={course.description}
+          onChange={(e) =>
+            setCourse({ ...course, description: e.target.value })
+          }
+        />
 
-          {/* Lessons Section */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Lessons</h2>
-              <Button onClick={handleAddLesson} size="sm" variant="outline" className="gap-2 bg-transparent">
-                <IconPlus className="w-4 h-4" />
-                Add Lesson
-              </Button>
-            </div>
+        <Label>Price</Label>
+        <Input
+          type="number"
+          value={course.pricing}
+          onChange={(e) =>
+            setCourse({ ...course, pricing: e.target.value })
+          }
+        />
 
-            <div className="space-y-2">
-              {course.lessons.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No lessons added yet. Click "Add Lesson" to get started.
-                </div>
-              ) : (
-                course.lessons.map((lesson, index) => (
-                  <div
-                    key={lesson.id}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={handleDragOver}
-                    onDrop={() => handleDrop(index)}
-                    className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${
-                      draggedIndex === index ? "opacity-50 bg-muted" : "hover:bg-muted"
-                    }`}
-                  >
-                    <IconGripVertical className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <Input
-                        value={lesson.title}
-                        onChange={(e) =>
-                          handleUpdateLesson(lesson.id, {
-                            title: e.target.value,
-                          })
-                        }
-                        placeholder="Lesson title"
-                        className="text-sm mb-2"
-                      />
-                      <select
-                        value={lesson.type}
-                        onChange={(e) =>
-                          handleUpdateLesson(lesson.id, {
-                            type: e.target.value as "video" | "pdf" | "quiz",
-                          })
-                        }
-                        className="w-full px-2 py-1 text-sm border rounded-md bg-background"
-                      >
-                        <option value="video">Video</option>
-                        <option value="pdf">PDF</option>
-                        <option value="quiz">Quiz</option>
-                      </select>
-                    </div>
-                    <Button
-                      onClick={() => handleDeleteLesson(lesson.id)}
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <IconTrash className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
-        </div>
+        {!courseId && (
+          <Button onClick={handleCreateCourse} disabled={loading}>
+            Create Course
+          </Button>
+        )}
+      </Card>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <Card className="p-6 space-y-4">
-            <h3 className="font-semibold">Course Thumbnail</h3>
-            <DragDropZone
-              onDrop={(file) => {
-                console.log("File dropped:", file)
-              }}
-            />
-            <img
-              src={course.thumbnail || "/placeholder.svg"}
-              alt="Course thumbnail"
-              className="w-full h-auto rounded-lg object-cover"
-            />
-          </Card>
+      {/* LESSONS */}
+      {courseId && (
+        <Card className="p-6 space-y-4">
+          <div className="flex justify-between">
+            <h2 className="text-xl font-semibold">Lessons</h2>
+            <Button variant="outline" onClick={handleAddLesson}>
+              <IconPlus className="w-4 h-4 mr-2" />
+              Add Lesson
+            </Button>
+          </div>
 
-          <Card className="p-6 space-y-4">
-            <h3 className="font-semibold">Quick Stats</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Lessons</span>
-                <span className="font-semibold">{course.lessons.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Price</span>
-                <span className="font-semibold">${course.pricing || "0.00"}</span>
-              </div>
-              <div className="border-t pt-3 mt-3">
-                <Button className="w-full gap-2">
-                  <IconUpload className="w-4 h-4" />
-                  Publish Course
+          {course.lessons.map((lesson) => (
+            <div
+              key={lesson.id}
+              className="space-y-3 p-4 border rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <IconGripVertical className="text-muted-foreground" />
+
+                <Input
+                  value={lesson.title}
+                  onChange={(e) =>
+                    handleUpdateLesson(lesson.id, {
+                      title: e.target.value,
+                    })
+                  }
+                />
+
+                <Button
+                  variant="ghost"
+                  onClick={() => handleDeleteLesson(lesson.id)}
+                >
+                  <IconTrash />
                 </Button>
               </div>
+
+              {/* VIDEO UPLOAD */}
+              <DragDropZone
+                accept="video/mp4"
+                onDrop={(file) =>
+                  handleLessonVideoUpload(lesson.id, file)
+                }
+              />
+
+              {/* VIDEO PREVIEW */}
+              {lesson.video_url && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <IconVideo className="w-4 h-4" />
+                    <span>Video uploaded</span>
+                  </div>
+                  <video
+                    src={lesson.video_url}
+                    controls
+                    className="w-full rounded-lg"
+                  />
+                </div>
+              )}
             </div>
-          </Card>
-        </div>
-      </div>
+          ))}
+        </Card>
+      )}
+
+      {/* SIDEBAR */}
+      {courseId && (
+        <Card className="p-6 space-y-4">
+          <h3 className="font-semibold">Thumbnail</h3>
+
+          <DragDropZone
+            accept="image/*"
+            onDrop={handleThumbnailUpload}
+          />
+
+          {course.thumbnail && (
+            <img
+              src={course.thumbnail}
+              className="rounded-lg w-full"
+              alt="Thumbnail"
+            />
+          )}
+
+          <Button onClick={handlePublishCourse} className="w-full">
+            <IconUpload className="mr-2" />
+            Publish Course
+          </Button>
+        </Card>
+      )}
     </div>
   )
 }
