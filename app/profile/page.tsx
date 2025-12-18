@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Upload, Mail, Phone, MapPin, Award, Eye, EyeOff } from "lucide-react"
+import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 // Mock user data
 const userData = {
@@ -81,6 +83,16 @@ export default function ProfilePage() {
 
 
   return (
+     <SidebarProvider
+              style={
+                {
+                  "--sidebar-width": "calc(var(--spacing) * 72)",
+                  "--header-height": "calc(var(--spacing) * 12)",
+                } as React.CSSProperties
+              }
+            >
+              <AppSidebar variant="inset" />
+              <SidebarInset>
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-4 lg:p-6">
         <div className="mb-8">
@@ -344,50 +356,7 @@ export default function ProfilePage() {
 
           {/* Preferences Tab */}
           <TabsContent value="preferences" className="mt-6 space-y-6">
-            {/* Email Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Email Notifications</CardTitle>
-                <CardDescription>Choose what email notifications you'd like to receive</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  {
-                    key: "emailNotifications",
-                    title: "General Notifications",
-                    description: "Important updates about your account and courses",
-                  },
-                  {
-                    key: "courseUpdates",
-                    title: "Course Updates",
-                    description: "Notifications when instructors update your enrolled courses",
-                  },
-                  {
-                    key: "weeklyDigest",
-                    title: "Weekly Digest",
-                    description: "A summary of new courses and content relevant to you",
-                  },
-                  {
-                    key: "communityFeatures",
-                    title: "Community Features",
-                    description: "Replies to your questions and discussions",
-                  },
-                ].map((pref) => (
-                  <div key={pref.key} className="flex items-start justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">{pref.title}</p>
-                      <p className="text-sm text-muted-foreground">{pref.description}</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences[pref.key as keyof typeof preferences]}
-                      
-                      className="w-5 h-5 cursor-pointer"
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+           
 
             {/* Data & Privacy */}
             <Card>
@@ -408,5 +377,7 @@ export default function ProfilePage() {
         </Tabs>
       </div>
     </div>
+              </SidebarInset>
+        </SidebarProvider>
   )
 }
