@@ -24,9 +24,9 @@ export type EnrollmentWithCourse = Enrollment & {
   };
 };
 
-// 🔹 Create new enrollment
+
 export const createEnrollment = async (courseId: string, learnerId: string): Promise<Enrollment | null> => {
-  // ✅ First, check if already enrolled
+
   const { data: existing, error: existingError } = await supabase
     .from("enrollments")
     .select("*")
@@ -44,14 +44,13 @@ export const createEnrollment = async (courseId: string, learnerId: string): Pro
     return existing;
   }
 
-  // ✅ Otherwise, create new enrollment
   const { data, error } = await supabase
     .from("enrollments")
     .insert([
       {
         course_id: courseId,
         learner_id: learnerId,
-        payment_status: "free", // You can change later to handle Stripe or M-Pesa
+        payment_status: "free", //  change later to handle Stripe or M-Pesa
         progress: 0,
         completed: false,
       },
@@ -67,7 +66,7 @@ export const createEnrollment = async (courseId: string, learnerId: string): Pro
   return data;
 };
 
-// 🔹 Fetch all enrollments for a learner (with course details)
+
 export const getEnrollmentsByLearner = async (learnerId: string): Promise<EnrollmentWithCourse[]> => {
   const { data, error } = await supabase
     .from("enrollments")
@@ -93,7 +92,7 @@ export const getEnrollmentsByLearner = async (learnerId: string): Promise<Enroll
   return data || [];
 };
 
-// 🔹 Get a learner’s enrollment for a specific course
+
 export const getEnrollment = async (courseId: string, learnerId: string): Promise<Enrollment | null> => {
   const { data, error } = await supabase
     .from("enrollments")
@@ -110,7 +109,7 @@ export const getEnrollment = async (courseId: string, learnerId: string): Promis
   return data;
 };
 
-// 🔹 Update progress (e.g., when finishing a lesson)
+
 export const updateEnrollmentProgress = async (
   enrollmentId: string,
   progress: number,
