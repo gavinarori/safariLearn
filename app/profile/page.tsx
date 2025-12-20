@@ -117,25 +117,18 @@ export default function ProfilePage() {
     }
   }
 
-  const handleChangePassword = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("Passwords do not match")
-      return
-    }
+const handleChangePassword = async () => {
+  if (!user?.email) return
 
-    try {
-      await ProfileService.changePassword(passwordData.newPassword)
-      alert("Password updated successfully")
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      })
-    } catch (err) {
-      console.error(err)
-      alert("Failed to update password")
-    }
+  try {
+    await ProfileService.requestPasswordReset(user.email)
+    alert("Password reset link sent to your email 📩")
+  } catch (err) {
+    console.error(err)
+    alert("Failed to send password reset email")
   }
+}
+
 
   const handleAvatarUpload = async (file: File) => {
     if (!user) return
@@ -265,33 +258,10 @@ export default function ProfilePage() {
                     <CardTitle>Change Password</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="relative">
-                      <Input
-                        name="newPassword"
-                        type={showNewPassword ? "text" : "password"}
-                        placeholder="New password"
-                        value={passwordData.newPassword}
-                        onChange={handlePasswordChange}
-                      />
-                      <button
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2"
-                      >
-                        {showNewPassword ? <EyeOff /> : <Eye />}
-                      </button>
-                    </div>
-
-                    <Input
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="Confirm password"
-                      value={passwordData.confirmPassword}
-                      onChange={handlePasswordChange}
-                    />
-
                     <Button onClick={handleChangePassword}>
-                      Update Password
-                    </Button>
+  Send Password Reset Link
+</Button>
+
                   </CardContent>
                 </Card>
               </TabsContent>
