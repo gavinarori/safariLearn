@@ -2,13 +2,6 @@
 
 import { createClient } from "@/superbase/client";
 
-interface ImportMetaEnv {
-  readonly VITE_SUPABASE_URL: string;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
 
 
 
@@ -107,7 +100,7 @@ async requestPasswordReset(email: string) {
   const token = session.data.session?.access_token
 
   const res = await fetch(
-    `${import.meta.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
+  `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
     {
       method: "POST",
       headers: {

@@ -33,9 +33,7 @@ import { TrainerCoursesGrid } from "./TrainerCoursesGrid"
 
 const supabase = createClient()
 
-// =======================
-// TYPES
-// =======================
+
 
 interface Lesson {
   id: string
@@ -45,9 +43,6 @@ interface Lesson {
   order_index: number
 }
 
-// =======================
-// COMPONENT
-// =======================
 
 export function CourseBuilderForm() {
   const [courseId, setCourseId] = useState<string | null>(null)
@@ -62,9 +57,7 @@ export function CourseBuilderForm() {
     lessons: [] as Lesson[],
   })
 
-  // =======================
-  // AUTH
-  // =======================
+
 
   const initTrainer = async () => {
     const { data } = await supabase.auth.getUser()
@@ -73,9 +66,6 @@ export function CourseBuilderForm() {
     return data.user.id
   }
 
-  // =======================
-  // COURSE
-  // =======================
 
   const handleCreateCourse = async () => {
     if (!course.title) return alert("Course title required")
@@ -97,10 +87,6 @@ export function CourseBuilderForm() {
 
 
 
-  // =======================
-  // THUMBNAIL
-  // =======================
-
   const handleThumbnailUpload = async (file: File) => {
     if (!trainerId || !courseId) return
 
@@ -114,9 +100,7 @@ export function CourseBuilderForm() {
     setCourse((prev) => ({ ...prev, thumbnail: url }))
   }
 
-  // =======================
-  // LESSONS
-  // =======================
+
 
   const handleAddLesson = async () => {
     if (!courseId) return alert("Create course first")
@@ -178,7 +162,6 @@ export function CourseBuilderForm() {
   if (!courseId) return
   const uid = trainerId ?? (await initTrainer())
 
-  // 1️⃣ Validate lessons
   if (course.lessons.length === 0) {
     return alert("Add at least one lesson before publishing")
   }
@@ -191,7 +174,6 @@ export function CourseBuilderForm() {
     return alert("All video lessons must have a video uploaded")
   }
 
-  // 2️⃣ Validate thumbnail
   if (!course.thumbnail) {
     return alert("Upload a course thumbnail before publishing")
   }
@@ -199,10 +181,7 @@ export function CourseBuilderForm() {
   setLoading(true)
 
   try {
-    // 3️⃣ Publish lessons
-    await LessonsService.publishLessonsByCourse(courseId)
-
-    // 4️⃣ Publish course
+    // Publish course
     await publishCourse(courseId, uid)
 
     alert("Course & lessons published successfully 🎉")
