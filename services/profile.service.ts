@@ -2,6 +2,14 @@
 
 import { createClient } from "@/superbase/client";
 
+interface ImportMetaEnv {
+  readonly VITE_SUPABASE_URL: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 
 
 const supabase = createClient();
@@ -15,7 +23,7 @@ export interface UserProfile {
   avatar_url: string | null
   bio: string | null
   created_at: string
-  updated_at: string | null
+  updated_at: string | null 
 }
 
 
@@ -94,6 +102,22 @@ async requestPasswordReset(email: string) {
     return data.publicUrl
   },
 
+  async deleteAccount() {
+  const session = await supabase.auth.getSession()
+  const token = session.data.session?.access_token
+
+  const res = await fetch(
+    `${import.meta.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+
+  if (!res.ok) throw new Error("Delete failed")
+},
 
   async getAchievements(userId: string) {
     const { data, error } = await supabase
@@ -107,18 +131,6 @@ async requestPasswordReset(email: string) {
   },
 
 
-  async deleteAccount() {
-    /**
-     * IMPORTANT
-     * Supabase does NOT allow deleting auth users from the client.
-     * This must be done via:
-     * - Edge Function OR
-     * - Backend API with Service Role key
-     */
-    throw new Error(
-      "Account deletion must be handled via server or Supabase Edge Function"
-    )
-  },
 
   async logout() {
     const { error } = await supabase.auth.signOut()

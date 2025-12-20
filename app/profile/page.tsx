@@ -277,12 +277,18 @@ const handleChangePassword = async () => {
                       <Mail className="w-4 h-4 mr-2" /> Download My Data
                     </Button>
                     <Button
-                      variant="outline"
-                      className="w-full text-destructive"
-                      onClick={() => alert("Use Edge Function to delete")}
-                    >
-                      Delete My Account
-                    </Button>
+  variant="outline"
+  className="w-full text-destructive"
+  onClick={async () => {
+    if (!confirm("This action is irreversible. Continue?")) return
+    await ProfileService.deleteAccount()
+    await ProfileService.logout()
+    window.location.href = "/"
+  }}
+>
+  Delete My Account
+</Button>
+
                   </CardContent>
                 </Card>
               </TabsContent>
