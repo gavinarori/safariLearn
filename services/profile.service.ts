@@ -63,13 +63,13 @@ export const ProfileService = {
   },
 
 
-  async changePassword(newPassword: string) {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    })
+async requestPasswordReset(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  })
 
-    if (error) throw error
-  },
+  if (error) throw error
+},
 
   async uploadAvatar(userId: string, file: File) {
     const fileExt = file.name.split(".").pop()
