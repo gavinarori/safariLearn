@@ -2,7 +2,7 @@ import { createClient } from "@/superbase/client";
 
 const supabase = createClient();
 
-// 🧱 Types
+
 export type Enrollment = {
   id: string;
   course_id: string;

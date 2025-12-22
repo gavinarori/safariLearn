@@ -14,9 +14,7 @@ export interface WaitlistEntry {
   created_at?: string
 }
 
-/**
- * Add user to waitlist
- */
+
 export async function addToWaitlist(entry: WaitlistEntry) {
   const { data, error } = await supabase
     .from("Wait_list")
@@ -33,9 +31,7 @@ export async function addToWaitlist(entry: WaitlistEntry) {
   return data
 }
 
-/**
- * Get all waitlist entries (admin use)
- */
+
 export async function getWaitlist() {
   const { data, error } = await supabase
     .from("Wait_list")
@@ -46,9 +42,7 @@ export async function getWaitlist() {
   return data
 }
 
-/**
- * Check if email is already on the waitlist
- */
+
 export async function checkWaitlistByEmail(email: string) {
   const { data, error } = await supabase
     .from("Wait_list")
