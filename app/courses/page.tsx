@@ -1,10 +1,15 @@
+"use client"
+
 import type React from "react"
+import { useState } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { CourseDiscovery } from "@/components/course-discovery"
+import { CourseExplorer } from "@/components/course-discovery"
 
 export default function Courses() {
+  const [searchQuery, setSearchQuery] = useState("")
+
   return (
     <SidebarProvider
       style={
@@ -16,9 +21,9 @@ export default function Courses() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader onSearch={setSearchQuery} />
         <div className="flex flex-1 flex-col">
-          <CourseDiscovery />
+          <CourseExplorer searchQuery={searchQuery} />
         </div>
       </SidebarInset>
     </SidebarProvider>
