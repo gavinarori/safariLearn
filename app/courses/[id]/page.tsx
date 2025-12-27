@@ -259,8 +259,35 @@ const updated = await updateCalendarEvent(event.id, {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* HERO SECTION */}
-      <div className={`relative pb-12 ${!isEnrolled ? "bg-gradient-to-r from-primary/10 to-accent/10" : ""}`}>
+
+      <div className="relative pb-12 overflow-hidden">
+
+<div
+  className="absolute inset-0 z-0"
+  style={{
+    backgroundImage: `url("/tortoise-shell.svg")`,
+    backgroundRepeat: "repeat",
+    backgroundSize: "420px",
+    backgroundPosition: "center",
+    opacity: 0.3, 
+  }}
+/>
+
+
+<div
+  className="absolute inset-0 z-[1]"
+  style={{
+    backgroundImage: `
+      linear-gradient(
+        to right,
+        hsl(var(--primary) / 0.12),
+        hsl(var(--accent) / 0.12)
+      )
+    `,
+  }}
+/>
+
+
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* MAIN CONTENT */}
