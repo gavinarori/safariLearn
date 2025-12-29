@@ -1,356 +1,191 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { useParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  CheckCircle2,
-  Download,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react"
-import { AppSidebar } from "@/components/learn-components/app-sidebar"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
-import {
-  VideoPlayer,
-  VideoPlayerContent,
-  VideoPlayerControlBar,
-  VideoPlayerMuteButton,
-  VideoPlayerPlayButton,
-  VideoPlayerSeekBackwardButton,
-  VideoPlayerSeekForwardButton,
-  VideoPlayerTimeDisplay,
-  VideoPlayerTimeRange,
-  VideoPlayerVolumeRange,
-} from "@/components/ui/shadcn-io/video-player"
-import { LessonsService } from "@/services/lessonsService"
-import { useAuth } from "@/contexts/auth"
-import {
-  markLessonCompleted,
-  recalculateEnrollmentProgress,
-} from "@/services/coursesService"
-import { createClient } from "@/superbase/client"
+import { Button } from "@/components/ui/button"
+import { Award, ChevronRight, ChevronLeft } from "lucide-react"
+import { LearningLayout } from "@/components/learn-components/learning-layout"
+import { LearningNav } from "@/components/learn-components/learning-nav"
+import { ContentSection } from "@/components/learn-components/content-section"
+import { CheckpointQuiz } from "@/components/learn-components/checkpoint-quiz"
+import { mockLessonData } from "@/data/mock-lessons"
 
-const supabase = createClient()
+export default function LearnPage() {
+  const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
+  const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set())
+  const [completedSubtopics, setCompletedSubtopics] = useState<Set<string>>(new Set())
+  const [showQuiz, setShowQuiz] = useState(false)
 
-type LessonRow = {
-  id: string
-  course_id: string
-  title: string
-  video_url?: string | null
-  order_index?: number | null
-  duration?: number | null
-}
+  const currentTopic = mockLessonData.topics[currentChapterIndex]
+  const isLastChapter = currentChapterIndex === mockLessonData.topics.length - 1
+  const isFirstChapter = currentChapterIndex === 0
+  const allTopicsCompleted = completedTopics.size === mockLessonData.topics.length
 
-type UIPlayLesson = {
-  id: string
-  week: number
-  number: number
-  title: string
-  duration: string
-  completed: boolean
-  video_url?: string | null
-  resumeAt?: number
-}
-
-export default function CoursePlayerPage() {
-  const { courseId } = useParams() as { courseId?: string }
-  const { user } = useAuth()
-
-  const videoRef = useRef<HTMLVideoElement | null>(null)
-
-  const [lessons, setLessons] = useState<LessonRow[]>([])
-  const [currentLesson, setCurrentLesson] = useState<UIPlayLesson | null>(null)
-  const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({})
-  const [lessonProgress, setLessonProgress] = useState<Record<string, any>>({})
-  const [expandedWeeks, setExpandedWeeks] = useState<Record<number, boolean>>({})
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  if (!user) {
-    return <div className="flex items-center justify-center min-h-screen">Login required</div>
-  }
-
-  const mapToUILesson = (l: LessonRow): UIPlayLesson => {
-    const order = l.order_index ?? 1
-    const week = Math.max(1, Math.ceil(order / 5))
-    return {
-      id: l.id,
-      week,
-      number: order,
-      title: l.title,
-      duration: formatDurationMinutes(l.duration),
-      completed: !!completedLessons[l.id],
-      video_url: l.video_url,
-      resumeAt: lessonProgress[l.id]?.last_position ?? 0,
+  const handleNextChapter = () => {
+    if (!isLastChapter) {
+      setCurrentChapterIndex(currentChapterIndex + 1)
+      setShowQuiz(false)
     }
   }
 
-  const groupedLessons = useMemo(() => {
-    const grouped: Record<number, UIPlayLesson[]> = {}
-    lessons.map(mapToUILesson).forEach((l) => {
-      grouped[l.week] ??= []
-      grouped[l.week].push(l)
-    })
-    return grouped
-  }, [lessons, completedLessons, lessonProgress])
-
-  const weeks = Object.keys(groupedLessons).map(Number).sort((a, b) => a - b)
-
-  useEffect(() => {
-    if (!courseId || !user) return
-
-    const load = async () => {
-      try {
-        setLoading(true)
-
-        const lessonData = await LessonsService.getLessonsByCourse(courseId)
-        const enrollment = await fetchEnrollment(user.id, courseId)
-
-        const completed: Record<string, boolean> = {}
-        const progress: Record<string, any> = {}
-
-        enrollment?.lesson_progress?.forEach((lp: any) => {
-          if (lp.is_completed) completed[lp.lesson_id] = true
-          progress[lp.lesson_id] = lp
-        })
-
-        setLessons(lessonData)
-        setCompletedLessons(completed)
-        setLessonProgress(progress)
-
-        const first =
-          lessonData.find((l) => !completed[l.id]) || lessonData[0]
-
-        setCurrentLesson(mapToUILesson(first))
-        setExpandedWeeks({ [Math.ceil((first.order_index ?? 1) / 5)]: true })
-      } catch (e: any) {
-        setError(e.message)
-      } finally {
-        setLoading(false)
-      }
+  const handlePreviousChapter = () => {
+    if (!isFirstChapter) {
+      setCurrentChapterIndex(currentChapterIndex - 1)
+      setShowQuiz(false)
     }
+  }
 
-    load()
-  }, [courseId, user])
-
-  useEffect(() => {
-    if (videoRef.current && currentLesson?.resumeAt) {
-      videoRef.current.currentTime = currentLesson.resumeAt
-    }
-  }, [currentLesson])
-
-  useEffect(() => {
-    if (!videoRef.current || !currentLesson) return
-
-    const video = videoRef.current
-
-    const interval = setInterval(async () => {
-      const enrollmentId = await fetchEnrollmentId(user.id, courseId!)
-      if (!enrollmentId) return
-
-      await supabase.from("lesson_progress").upsert(
-        {
-          enrollment_id: enrollmentId,
-          lesson_id: currentLesson.id,
-          last_position: Math.floor(video.currentTime),
-          duration: Math.floor(video.duration),
-        },
-        { onConflict: "enrollment_id,lesson_id" }
-      )
-    }, 5000)
-
-    const onEnded = async () => {
-      const enrollmentId = await fetchEnrollmentId(user.id, courseId!)
-      if (!enrollmentId) return
-
-      await markLessonCompleted(enrollmentId, currentLesson.id)
-      await recalculateEnrollmentProgress(enrollmentId)
-
-      setCompletedLessons((p) => ({ ...p, [currentLesson.id]: true }))
-      setCurrentLesson((p) => p && { ...p, completed: true })
-    }
-
-    video.addEventListener("ended", onEnded)
-
-    return () => {
-      clearInterval(interval)
-      video.removeEventListener("ended", onEnded)
-    }
-  }, [currentLesson])
-
-    const handleSelectLesson = (lesson: UIPlayLesson) => setCurrentLesson(lesson)
-
- if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="loader">Loading lessons…</div>
-      </div>
-    )
-
-  if (error)
-    return (
-      <div className="flex flex-col justify-center items-center min-h-screen">
-        <p className="text-red-500 font-semibold mb-3">Error: {error}</p>
-        <Button onClick={() => location.reload()}>Retry</Button>
-      </div>
-    )
-
-  if (!lessons.length)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-center py-20">No lessons found for this course.</p>
-      </div>
-    )
-
-
+  const completeCurrentTopic = () => {
+    const newCompleted = new Set(completedTopics)
+    newCompleted.add(currentTopic.id)
+    setCompletedTopics(newCompleted)
+  }
 
   return (
-    <SidebarProvider style={{ "--sidebar-width": "350px" } as React.CSSProperties}>
-      <AppSidebar courseId={courseId} />
-      <SidebarInset className="flex flex-col min-h-screen bg-background">
-        <header className="bg-background sticky top-0 flex items-center gap-2 border-b p-4 z-10">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="h-4" />
-        </header>
-
-        <main className="flex-1 w-full max-w-7xl mx-auto p-4 lg:p-6 space-y-6">
-          {/* VIDEO PLAYER */}
-          <div className="w-full h-56 sm:h-64 md:h-[45vh] lg:h-[50vh] xl:h-[60vh] 2xl:h-[65vh] rounded-xl overflow-hidden bg-black">
-            {currentLesson?.video_url ? (
-              <VideoPlayer className="w-full h-full">
-                <VideoPlayerContent
-                  crossOrigin=""
-                  muted
-                  preload="auto"
-                  slot="media"
-                  ref={videoRef}
-                  src={currentLesson.video_url || ""}
-                />
-                <VideoPlayerControlBar>
-                  <VideoPlayerPlayButton />
-                  <VideoPlayerSeekBackwardButton />
-                  <VideoPlayerSeekForwardButton />
-                  <VideoPlayerTimeRange />
-                  <VideoPlayerTimeDisplay showDuration />
-                  <VideoPlayerMuteButton />
-                  <VideoPlayerVolumeRange />
-                </VideoPlayerControlBar>
-              </VideoPlayer>
-            ) : (
-              <img src="/placeholder.svg" alt="Video player" className="w-full h-full object-cover" />
-            )}
+    <LearningLayout
+      sidebar={
+        <LearningNav
+          lesson={mockLessonData}
+          completedTopics={completedTopics}
+          completedSubtopics={completedSubtopics}
+          currentChapterId={currentTopic.id}
+          onNavigateToChapter={(chapterId) => {
+            const index = mockLessonData.topics.findIndex((t) => t.id === chapterId)
+            setCurrentChapterIndex(index)
+            setShowQuiz(false)
+          }}
+        />
+      }
+    >
+      <div className="max-w-4xl mx-auto py-6 px-4 lg:px-0 space-y-8">
+        <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 p-8">
+          <div className="space-y-2">
+            <Badge className="w-fit">
+              Chapter {currentChapterIndex + 1} of {mockLessonData.topics.length}
+            </Badge>
+            <h1 className="text-4xl font-bold">{currentTopic.title}</h1>
+            <p className="text-muted-foreground text-lg">{currentTopic.description}</p>
           </div>
+        </div>
 
-          {/* GRID LAYOUT */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* LEFT: CURRICULUM */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto">
-                <CardHeader>
-                  <CardTitle>Curriculum</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {weeks.map((week) => (
-                    <div key={week}>
-                      <button
-                        onClick={() => setExpandedWeeks(prev => ({ ...prev, [week]: !prev[week] }))}
-                        className="flex justify-between items-center w-full p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors mb-2 font-semibold text-sm"
+        {/* Progress bar for current chapter */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">Chapter Progress</span>
+            <span className="text-muted-foreground">
+              {completedSubtopics.size} of {currentTopic.subtopics?.length || 0} subtopics
+            </span>
+          </div>
+          <div className="flex-1 bg-muted h-2 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{
+                width: `${currentTopic.subtopics?.length ? (completedSubtopics.size / currentTopic.subtopics.length) * 100 : 0}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        {!showQuiz ? (
+          <>
+            {currentTopic.subtopics && currentTopic.subtopics.length > 0 && (
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="font-semibold mb-4">Topics to Cover:</h3>
+                  <div className="space-y-2">
+                    {currentTopic.subtopics.map((subtopic) => (
+                      <label
+                        key={subtopic.id}
+                        className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-muted/50 transition-colors"
                       >
-                        <span>Week {week}</span>
-                        {expandedWeeks[week] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </button>
-
-                      {expandedWeeks[week] && (
-                        <div className="space-y-1 ml-2 mb-4">
-                          {groupedLessons[week].map((lesson) => (
-                            <button
-                              key={lesson.id}
-                              onClick={() => handleSelectLesson(lesson)}
-                              className={`block w-full text-left p-2 rounded transition-colors text-sm ${
-                                currentLesson?.id === lesson.id ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
-                              }`}
-                            >
-                              <div className="flex gap-2 items-start">
-                                <div className="flex-1">
-                                  <p className="font-medium leading-tight">{lesson.title}</p>
-                                  <p className="text-xs opacity-70">{lesson.duration}</p>
-                                </div>
-                                {completedLessons[lesson.id] && (
-                                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-1" />
-                                )}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        <input
+                          type="checkbox"
+                          checked={completedSubtopics.has(subtopic.id)}
+                          onChange={(e) => {
+                            const newCompleted = new Set(completedSubtopics)
+                            if (e.target.checked) {
+                              newCompleted.add(subtopic.id)
+                            } else {
+                              newCompleted.delete(subtopic.id)
+                            }
+                            setCompletedSubtopics(newCompleted)
+                          }}
+                          className="w-5 h-5 rounded cursor-pointer"
+                        />
+                        <span className="text-sm font-medium">{subtopic.title}</span>
+                      </label>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Chapter content with mix of sections and dropdowns */}
+            <div className="space-y-6">
+              {currentTopic.sections.map((section) => (
+                <ContentSection key={section.id} section={section} />
+              ))}
             </div>
 
-            {/* RIGHT: LESSON DETAILS */}
-            <div className="lg:col-span-3 space-y-6">
-              <Card className="p-6">
-                <Badge className="mb-2">
-                  Week {currentLesson?.week} • Lesson {currentLesson?.number}
-                </Badge>
+            <div className="flex items-center justify-between pt-8 border-t">
+              <Button
+                variant="outline"
+                onClick={handlePreviousChapter}
+                disabled={isFirstChapter}
+                className="gap-2 bg-transparent"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous Chapter
+              </Button>
 
-                <h1 className="text-2xl font-bold mb-4">{currentLesson?.title}</h1>
+              {!isLastChapter ? (
+                <Button onClick={handleNextChapter} className="gap-2">
+                  Next Chapter
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button onClick={() => setShowQuiz(true)} className="gap-2">
+                  Take Final Quiz
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <CheckpointQuiz
+              topicIndex={currentChapterIndex}
+              isFinalQuiz={true}
+              onComplete={() => {
+                completeCurrentTopic()
+                setShowQuiz(false)
+              }}
+            />
+            <div className="flex gap-4 pt-4">
+              <Button variant="outline" onClick={() => setShowQuiz(false)}>
+                Back to Content
+              </Button>
+            </div>
+          </>
+        )}
 
-                <div className="flex flex-wrap gap-4">
-                  <Button
-                    variant={currentLesson?.completed ? "default" : "outline"}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    {currentLesson?.completed ? "Completed" : "Mark as Complete"}
-                  </Button>
-
-                  <Button variant="outline">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Materials
-                  </Button>
+        {/* Completion screen */}
+        {allTopicsCompleted && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Award className="w-12 h-12 text-primary" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">Course Completed!</h3>
+                  <p className="text-sm text-muted-foreground">You have successfully completed all chapters</p>
                 </div>
-              </Card>
-            </div>
-          </div>
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+                <Button>Download Certificate</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </LearningLayout>
   )
-}
-
-function formatDurationMinutes(mins?: number | null) {
-  if (!mins) return "0:00"
-  const m = Math.floor(mins % 60)
-  const h = Math.floor(mins / 60)
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}` : `${m}:00`
-}
-
-async function fetchEnrollment(userId: string, courseId: string) {
-  const { data } = await supabase
-    .from("enrollments")
-    .select("id, lesson_progress(*)")
-    .eq("learner_id", userId)
-    .eq("course_id", courseId)
-    .single()
-  return data
-}
-
-async function fetchEnrollmentId(userId: string, courseId: string) {
-  const { data } = await supabase
-    .from("enrollments")
-    .select("id")
-    .eq("learner_id", userId)
-    .eq("course_id", courseId)
-    .single()
-  return data?.id ?? null
 }
