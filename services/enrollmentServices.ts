@@ -1,131 +1,183 @@
-import { createClient } from "@/superbase/client";
+import { createClient } from "@/superbase/client"
 
-const supabase = createClient();
+const supabase = createClient()
 
+
+
+export type EnrollmentStatus = "invited" | "active" | "completed"
 
 export type Enrollment = {
-  id: string;
-  course_id: string;
-  learner_id: string;
-  payment_status: "pending" | "paid" | "free";
-  progress: number;
-  completed: boolean;
-  enrolled_at: string;
-};
+  id: string
+  company_id: string
+  course_id: string
+  user_id: string
+  status: EnrollmentStatus
+  progress: number
+  enrolled_at: string
+}
 
 export type EnrollmentWithCourse = Enrollment & {
   course?: {
-    id: string;
-    title: string;
-    thumbnail_url: string | null;
-    category: string | null;
-    price: number | null;
-    trainer_id: string | null;
-  };
-};
+    id: string
+    title: string
+    thumbnail_url: string | null
+    category: string | null
+    price: number | null
+  }
+}
 
 
-export const createEnrollment = async (courseId: string, learnerId: string): Promise<Enrollment | null> => {
 
-  const { data: existing, error: existingError } = await supabase
+export const createEnrollment = async (
+  courseId: string,
+  userId: string
+): Promise<Enrollment | null> => {
+  // 1️⃣ check seat availability (Edge Function)
+  const { data: session } = await supabase.auth.getSession()
+  const token = session.session?.access_token
+
+  if (!token) throw new Error("Not authenticated")
+
+  const seatCheck = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/check-seat-availability`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+  console.log("SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
+
+
+  if (!seatCheck.ok) {
+    throw new Error("Seat limit reached")
+  }
+
+  const { data: admin } = await supabase
+    .from("users")
+    .select("company_id")
+    .eq("id", (await supabase.auth.getUser()).data.user?.id)
+    .single()
+
+  if (!admin?.company_id) throw new Error("Admin has no company")
+
+
+  const { data: existing } = await supabase
     .from("enrollments")
     .select("*")
     .eq("course_id", courseId)
-    .eq("learner_id", learnerId)
-    .maybeSingle();
+    .eq("user_id", userId)
+    .maybeSingle()
 
-  if (existingError) {
-    console.error("Error checking existing enrollment:", existingError);
-    return null;
-  }
+  if (existing) return existing
 
-  if (existing) {
-    console.warn("Already enrolled — skipping new record.");
-    return existing;
-  }
 
   const { data, error } = await supabase
     .from("enrollments")
-    .insert([
-      {
-        course_id: courseId,
-        learner_id: learnerId,
-        payment_status: "free", //  change later to handle Stripe or M-Pesa
-        progress: 0,
-        completed: false,
-      },
-    ])
+    .insert({
+      company_id: admin.company_id,
+      course_id: courseId,
+      user_id: userId,
+      status: "active",
+      progress: 0,
+    })
     .select()
-    .single();
+    .single()
 
-  if (error) {
-    console.error("Error creating enrollment:", error);
-    return null;
-  }
-
-  return data;
-};
+  if (error) throw error
+  return data
+}
 
 
-export const getEnrollmentsByLearner = async (learnerId: string): Promise<EnrollmentWithCourse[]> => {
+
+export const getMyEnrollments = async (): Promise<
+  EnrollmentWithCourse[]
+> => {
+  const { data: user } = await supabase.auth.getUser()
+  if (!user.user) return []
+
   const { data, error } = await supabase
     .from("enrollments")
-    .select(`
+    .select(
+      `
       *,
       course:courses (
         id,
         title,
         thumbnail_url,
         category,
-        price,
-        trainer_id
+        price
       )
-    `)
-    .eq("learner_id", learnerId)
-    .order("enrolled_at", { ascending: false });
+    `
+    )
+    .eq("user_id", user.user.id)
+    .order("enrolled_at", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching learner enrollments:", error);
-    return [];
-  }
-
-  return data || [];
-};
+  if (error) throw error
+  return data || []
+}
 
 
-export const getEnrollment = async (courseId: string, learnerId: string): Promise<Enrollment | null> => {
+export const getEnrollment = async (
+  courseId: string
+): Promise<Enrollment | null> => {
+  const { data: user } = await supabase.auth.getUser()
+  if (!user.user) return null
+
   const { data, error } = await supabase
     .from("enrollments")
     .select("*")
     .eq("course_id", courseId)
-    .eq("learner_id", learnerId)
-    .maybeSingle();
+    .eq("user_id", user.user.id)
+    .maybeSingle()
 
-  if (error) {
-    console.error("Error fetching enrollment:", error);
-    return null;
-  }
+  if (error) throw error
+  return data
+}
 
-  return data;
-};
 
 
 export const updateEnrollmentProgress = async (
   enrollmentId: string,
-  progress: number,
-  completed: boolean = false
+  progress: number
 ): Promise<Enrollment | null> => {
+  const status: EnrollmentStatus =
+    progress >= 100 ? "completed" : "active"
+
   const { data, error } = await supabase
     .from("enrollments")
-    .update({ progress, completed })
+    .update({
+      progress,
+      status,
+    })
     .eq("id", enrollmentId)
     .select()
-    .single();
+    .single()
 
-  if (error) {
-    console.error("Error updating enrollment progress:", error);
-    return null;
-  }
+  if (error) throw error
+  return data
+}
 
-  return data;
-};
+
+export const getCompanyEnrollments = async (
+  companyId: string
+): Promise<EnrollmentWithCourse[]> => {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .select(
+      `
+      *,
+      course:courses (
+        id,
+        title,
+        category
+      )
+    `
+    )
+    .eq("company_id", companyId)
+    .order("enrolled_at", { ascending: false })
+
+  if (error) throw error
+  return data || []
+}

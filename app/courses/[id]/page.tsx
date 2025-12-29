@@ -20,6 +20,7 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
 } from "@/services/calendarService"
+import { getCurrentUserProfile } from "@/services/userService"
 
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { toast } from "sonner"
@@ -129,11 +130,10 @@ export default function CourseDetailsPage() {
   const handleEnroll = async () => {
     try {
       setButtonLoading(true)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        alert("Please log in to continue.")
+
+      const { data } = await supabase.auth.getUser()
+      if (!data.user) {
+        router.push("/login")
         return
       }
 
@@ -142,9 +142,28 @@ export default function CourseDetailsPage() {
         return
       }
 
-      const created = await createEnrollment(id, user.id)
-      if (!created) {
-        alert("Failed to enroll. Try again.")
+      const profile = await getCurrentUserProfile()
+      if (!profile) throw new Error("Profile missing")
+
+      if (!profile.company_id) {
+        router.push(
+          `/company/register?redirect=/courses/${id}`
+        )
+        return
+      }
+
+      // 💳 PAID COURSE → CHECKOUT
+      if (course?.price && course.price > 0) {
+        router.push(
+          `/checkout?courseId=${id}&companyId=${profile.company_id}`
+        )
+        return
+      }
+
+      // ✅ FREE COURSE → DIRECT ENROLL
+      const enrollment = await createEnrollment(id, data.user.id)
+      if (!enrollment) {
+        toast.error("No available seats")
         return
       }
 
@@ -152,7 +171,7 @@ export default function CourseDetailsPage() {
       router.push(`/learn/${id}`)
     } catch (err) {
       console.error(err)
-      alert("Something went wrong.")
+      toast.error("Enrollment failed")
     } finally {
       setButtonLoading(false)
     }
@@ -342,9 +361,14 @@ const updated = await updateCalendarEvent(event.id, {
 
                   <div className="text-3xl font-bold mb-6">{isFree ? "Free" : `$${course.price}`}</div>
 
-                  <Button size="lg" className="w-full mb-3" disabled={buttonLoading} onClick={handleEnroll}>
-                    {buttonLoading ? "Please wait..." : buttonLabel}
-                  </Button>
+                <Button
+              size="lg"
+              className="w-full mb-3"
+              onClick={handleEnroll}
+              disabled={buttonLoading}
+            >
+              {buttonLoading ? "Processing..." : buttonLabel}
+            </Button>
 
                   <Button variant="outline" size="lg" className="w-full bg-transparent" onClick={() => setIsFavorited(!isFavorited)}>
                     <Heart className={`w-4 h-4 mr-2 ${isFavorited ? "fill-current" : ""}`} />
