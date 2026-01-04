@@ -1,187 +1,129 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Award, ChevronRight, ChevronLeft } from "lucide-react"
+
 import { LearningLayout } from "@/components/learn-components/learning-layout"
 import { LearningNav } from "@/components/learn-components/learning-nav"
 import { ContentSection } from "@/components/learn-components/content-section"
 import { CheckpointQuiz } from "@/components/learn-components/checkpoint-quiz"
-import { mockLessonData } from "@/data/mock-lessons"
+
+import { LessonsService } from "@/services/lessonsService"
 
 export default function LearnPage() {
-  const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
-  const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set())
-  const [completedSubtopics, setCompletedSubtopics] = useState<Set<string>>(new Set())
+  const params = useParams()
+  const courseId = params.courseId as string
+
+  const [lessons, setLessons] = useState<any[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set())
   const [showQuiz, setShowQuiz] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const currentTopic = mockLessonData.topics[currentChapterIndex]
-  const isLastChapter = currentChapterIndex === mockLessonData.topics.length - 1
-  const isFirstChapter = currentChapterIndex === 0
-  const allTopicsCompleted = completedTopics.size === mockLessonData.topics.length
+  useEffect(() => {
+    if (!courseId) return
 
-  const handleNextChapter = () => {
-    if (!isLastChapter) {
-      setCurrentChapterIndex(currentChapterIndex + 1)
-      setShowQuiz(false)
+    const loadLessons = async () => {
+      const data = await LessonsService.getLessonsByCourse(courseId)
+      setLessons(data || [])
+      setLoading(false)
     }
-  }
 
-  const handlePreviousChapter = () => {
-    if (!isFirstChapter) {
-      setCurrentChapterIndex(currentChapterIndex - 1)
-      setShowQuiz(false)
-    }
-  }
+    loadLessons()
+  }, [courseId])
 
-  const completeCurrentTopic = () => {
-    const newCompleted = new Set(completedTopics)
-    newCompleted.add(currentTopic.id)
-    setCompletedTopics(newCompleted)
-  }
+  if (!courseId) return <div className="p-8">Invalid course</div>
+  if (loading) return <div className="p-8">Loading lessons…</div>
+  if (!lessons.length) return <div className="p-8">No lessons found</div>
+
+  const currentLesson = lessons[currentIndex]
+  const isFirst = currentIndex === 0
+  const isLast = currentIndex === lessons.length - 1
+  const allCompleted = completedLessons.size === lessons.length
 
   return (
     <LearningLayout
       sidebar={
         <LearningNav
-          lesson={mockLessonData}
-          completedTopics={completedTopics}
-          completedSubtopics={completedSubtopics}
-          currentChapterId={currentTopic.id}
-          onNavigateToChapter={(chapterId) => {
-            const index = mockLessonData.topics.findIndex((t) => t.id === chapterId)
-            setCurrentChapterIndex(index)
+          lesson={{
+            topics: lessons.map((l) => ({
+              id: l.id,
+              title: l.title,
+            })),
+          }}
+          completedTopics={completedLessons}
+          completedSubtopics={new Set()}
+          currentChapterId={currentLesson.id}
+          onNavigateToChapter={(lessonId) => {
+            const index = lessons.findIndex((l) => l.id === lessonId)
+            setCurrentIndex(index)
             setShowQuiz(false)
           }}
         />
       }
     >
-      <div className="max-w-4xl mx-auto py-6 px-4 lg:px-0 space-y-8">
-        <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 p-8">
-          <div className="space-y-2">
-            <Badge className="w-fit">
-              Chapter {currentChapterIndex + 1} of {mockLessonData.topics.length}
-            </Badge>
-            <h1 className="text-4xl font-bold">{currentTopic.title}</h1>
-            <p className="text-muted-foreground text-lg">{currentTopic.description}</p>
-          </div>
-        </div>
-
-        {/* Progress bar for current chapter */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Chapter Progress</span>
-            <span className="text-muted-foreground">
-              {completedSubtopics.size} of {currentTopic.subtopics?.length || 0} subtopics
-            </span>
-          </div>
-          <div className="flex-1 bg-muted h-2 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{
-                width: `${currentTopic.subtopics?.length ? (completedSubtopics.size / currentTopic.subtopics.length) * 100 : 0}%`,
-              }}
-            />
-          </div>
+      <div className="max-w-4xl mx-auto py-6 px-4 space-y-8">
+        <div className="rounded-lg bg-primary/5 border p-8">
+          <Badge>
+            Lesson {currentIndex + 1} of {lessons.length}
+          </Badge>
+          <h1 className="text-4xl font-bold mt-2">{currentLesson.title}</h1>
         </div>
 
         {!showQuiz ? (
           <>
-            {currentTopic.subtopics && currentTopic.subtopics.length > 0 && (
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold mb-4">Topics to Cover:</h3>
-                  <div className="space-y-2">
-                    {currentTopic.subtopics.map((subtopic) => (
-                      <label
-                        key={subtopic.id}
-                        className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-muted/50 transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={completedSubtopics.has(subtopic.id)}
-                          onChange={(e) => {
-                            const newCompleted = new Set(completedSubtopics)
-                            if (e.target.checked) {
-                              newCompleted.add(subtopic.id)
-                            } else {
-                              newCompleted.delete(subtopic.id)
-                            }
-                            setCompletedSubtopics(newCompleted)
-                          }}
-                          className="w-5 h-5 rounded cursor-pointer"
-                        />
-                        <span className="text-sm font-medium">{subtopic.title}</span>
-                      </label>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Chapter content with mix of sections and dropdowns */}
             <div className="space-y-6">
-              {currentTopic.sections.map((section) => (
-                <ContentSection key={section.id} section={section} />
+              {currentLesson.sections?.map((section: any, idx: number) => (
+                <ContentSection key={idx} section={section} />
               ))}
             </div>
 
-            <div className="flex items-center justify-between pt-8 border-t">
+            <div className="flex justify-between pt-8 border-t">
               <Button
                 variant="outline"
-                onClick={handlePreviousChapter}
-                disabled={isFirstChapter}
-                className="gap-2 bg-transparent"
+                onClick={() => setCurrentIndex((i) => i - 1)}
+                disabled={isFirst}
               >
-                <ChevronLeft className="w-4 h-4" />
-                Previous Chapter
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Previous
               </Button>
 
-              {!isLastChapter ? (
-                <Button onClick={handleNextChapter} className="gap-2">
-                  Next Chapter
-                  <ChevronRight className="w-4 h-4" />
+              {!isLast ? (
+                <Button onClick={() => setCurrentIndex((i) => i + 1)}>
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button onClick={() => setShowQuiz(true)} className="gap-2">
+                <Button onClick={() => setShowQuiz(true)}>
                   Take Final Quiz
-                  <ChevronRight className="w-4 h-4" />
                 </Button>
               )}
             </div>
           </>
         ) : (
-          <>
-            <CheckpointQuiz
-              topicIndex={currentChapterIndex}
-              isFinalQuiz={true}
-              onComplete={() => {
-                completeCurrentTopic()
-                setShowQuiz(false)
-              }}
-            />
-            <div className="flex gap-4 pt-4">
-              <Button variant="outline" onClick={() => setShowQuiz(false)}>
-                Back to Content
-              </Button>
-            </div>
-          </>
+          <CheckpointQuiz
+            lessonId={currentLesson.id}
+            quiz={currentLesson.quiz}
+            onComplete={() => {
+              setCompletedLessons((prev) => new Set(prev).add(currentLesson.id))
+              setShowQuiz(false)
+            }}
+          />
         )}
 
-        {/* Completion screen */}
-        {allTopicsCompleted && (
-          <Card className="border-primary/50 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <Award className="w-12 h-12 text-primary" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">Course Completed!</h3>
-                  <p className="text-sm text-muted-foreground">You have successfully completed all chapters</p>
-                </div>
-                <Button>Download Certificate</Button>
+        {allCompleted && (
+          <Card className="bg-primary/5 border-primary/30">
+            <CardContent className="pt-6 flex items-center gap-4">
+              <Award className="w-12 h-12 text-primary" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">Course Completed</h3>
               </div>
+              <Button>Download Certificate</Button>
             </CardContent>
           </Card>
         )}
