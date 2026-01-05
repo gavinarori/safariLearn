@@ -13,76 +13,92 @@ import { LearningNav } from "@/components/learn-components/learning-nav"
 import { ContentSection } from "@/components/learn-components/content-section"
 import { CheckpointQuiz } from "@/components/learn-components/checkpoint-quiz"
 
-import { LessonsService } from "@/services/lessonsService"
+import { CourseContentService } from "@/services/lessonsService"
 
 export default function LearnPage() {
-  const params = useParams()
-  const courseId = params.courseId as string
+  const { courseId } = useParams() as { courseId: string }
 
-  const [lessons, setLessons] = useState<any[]>([])
+  const [modules, setModules] = useState<any[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set())
+  const [completedModules, setCompletedModules] = useState<Set<string>>(new Set())
   const [showQuiz, setShowQuiz] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!courseId) return
 
-    const loadLessons = async () => {
-      const data = await LessonsService.getLessonsByCourse(courseId)
-      setLessons(data || [])
-      setLoading(false)
+    const loadCourse = async () => {
+      try {
+        const data = await CourseContentService.getCourseContent(courseId)
+        setModules(data.modules || [])
+      } finally {
+        setLoading(false)
+      }
     }
 
-    loadLessons()
+    loadCourse()
   }, [courseId])
 
+  /* ---------- Guards ---------- */
   if (!courseId) return <div className="p-8">Invalid course</div>
-  if (loading) return <div className="p-8">Loading lessons…</div>
-  if (!lessons.length) return <div className="p-8">No lessons found</div>
+  if (loading) return <div className="p-8">Loading course…</div>
+  if (!modules.length)
+    return <div className="p-8">No modules found for this course</div>
 
-  const currentLesson = lessons[currentIndex]
+  const currentModule = modules[currentIndex]
   const isFirst = currentIndex === 0
-  const isLast = currentIndex === lessons.length - 1
-  const allCompleted = completedLessons.size === lessons.length
+  const isLast = currentIndex === modules.length - 1
+  const allCompleted = completedModules.size === modules.length
 
   return (
     <LearningLayout
       sidebar={
         <LearningNav
           lesson={{
-            topics: lessons.map((l) => ({
-              id: l.id,
-              title: l.title,
+            topics: modules.map((m) => ({
+              id: m.id,
+              title: m.title,
             })),
           }}
-          completedTopics={completedLessons}
+          completedTopics={completedModules}
           completedSubtopics={new Set()}
-          currentChapterId={currentLesson.id}
-          onNavigateToChapter={(lessonId) => {
-            const index = lessons.findIndex((l) => l.id === lessonId)
-            setCurrentIndex(index)
-            setShowQuiz(false)
+          currentChapterId={currentModule.id}
+          onNavigateToChapter={(id) => {
+            const index = modules.findIndex((m) => m.id === id)
+            if (index !== -1) {
+              setCurrentIndex(index)
+              setShowQuiz(false)
+            }
           }}
         />
       }
     >
       <div className="max-w-4xl mx-auto py-6 px-4 space-y-8">
+        {/* Header */}
         <div className="rounded-lg bg-primary/5 border p-8">
           <Badge>
-            Lesson {currentIndex + 1} of {lessons.length}
+            Module {currentIndex + 1} of {modules.length}
           </Badge>
-          <h1 className="text-4xl font-bold mt-2">{currentLesson.title}</h1>
+          <h1 className="text-4xl font-bold mt-2">
+            {currentModule.title}
+          </h1>
+          {currentModule.description && (
+            <p className="text-muted-foreground mt-2">
+              {currentModule.description}
+            </p>
+          )}
         </div>
 
         {!showQuiz ? (
           <>
+            {/* Sections */}
             <div className="space-y-6">
-              {currentLesson.sections?.map((section: any, idx: number) => (
-                <ContentSection key={idx} section={section} />
+              {currentModule.module_sections?.map((section: any) => (
+                <ContentSection key={section.id} section={section} />
               ))}
             </div>
 
+            {/* Navigation */}
             <div className="flex justify-between pt-8 border-t">
               <Button
                 variant="outline"
@@ -98,19 +114,30 @@ export default function LearnPage() {
                   Next
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
-              ) : (
+              ) : currentModule.quizzes?.length ? (
                 <Button onClick={() => setShowQuiz(true)}>
-                  Take Final Quiz
+                  Take Module Quiz
+                </Button>
+              ) : (
+                <Button
+                  onClick={() =>
+                    setCompletedModules(
+                      (prev) => new Set(prev).add(currentModule.id)
+                    )
+                  }
+                >
+                  Complete Module
                 </Button>
               )}
             </div>
           </>
         ) : (
           <CheckpointQuiz
-            lessonId={currentLesson.id}
-            quiz={currentLesson.quiz}
+            quiz={currentModule.quizzes?.[0]}
             onComplete={() => {
-              setCompletedLessons((prev) => new Set(prev).add(currentLesson.id))
+              setCompletedModules(
+                (prev) => new Set(prev).add(currentModule.id)
+              )
               setShowQuiz(false)
             }}
           />
@@ -121,7 +148,9 @@ export default function LearnPage() {
             <CardContent className="pt-6 flex items-center gap-4">
               <Award className="w-12 h-12 text-primary" />
               <div className="flex-1">
-                <h3 className="font-semibold text-lg">Course Completed</h3>
+                <h3 className="font-semibold text-lg">
+                  Course Completed
+                </h3>
               </div>
               <Button>Download Certificate</Button>
             </CardContent>

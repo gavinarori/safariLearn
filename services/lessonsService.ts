@@ -1,132 +1,163 @@
-import { createClient } from "@/superbase/client";
+import { createClient } from "@/superbase/client"
 
-const supabase = createClient();
+const supabase = createClient()
 
 /* ================================
    Types
 ================================ */
 
-export type LessonSection =
-  | {
-      type: "text";
-      title: string;
-      subtitle?: string;
-      content: string;
-      keyPoints?: string[];
-      callout?: string;
-    }
-  | {
-      type: "image";
-      title: string;
-      image: string;
-      content?: string;
-    }
-  | {
-      type: "example";
-      title: string;
-      content: string;
-    };
+export type ModuleSection = {
+  id: string
+  type: "text" | "image" | "example"
+  title: string
+  subtitle?: string | null
+  content: string
+  image_url?: string | null
+  key_points?: string[] | null
+  callout?: string | null
+  position: number
+}
 
-export type LessonQuiz = {
-  questions: {
-    id: string;
-    question: string;
-    options: string[];
-    correctIndex: number;
-  }[];
-  passScore: number;
-};
+export type QuizOption = {
+  id: string
+  text: string
+  is_correct: boolean
+}
 
-export type LessonPayload = {
-  course_id: string;
-  title: string;
-  lesson_type: "reading" | "quiz" | "mixed";
-  sections?: LessonSection[];
-  quiz?: LessonQuiz;
-  order_index?: number;
-  estimated_time?: number; // minutes
-  is_preview?: boolean;
-};
+export type QuizQuestion = {
+  id: string
+  question: string
+  type: "mcq" | "true_false"
+  options: QuizOption[]
+}
+
+export type ModuleQuiz = {
+  id: string
+  passing_score: number
+  is_final: boolean
+  questions: QuizQuestion[]
+}
+
+export type CourseModule = {
+  id: string
+  title: string
+  description?: string | null
+  position: number
+  sections: ModuleSection[]
+  quiz?: ModuleQuiz
+}
+
+export type Lesson = {
+  id: string
+  title: string
+  order_index: number
+  is_preview: boolean
+  reading_time?: number | null
+  modules: CourseModule[]
+  finalQuiz?: ModuleQuiz
+}
+
+export type CourseLessonsData = {
+  lessons: Lesson[]
+}
 
 /* ================================
    Service
 ================================ */
 
-export const LessonsService = {
-  /* -------- Get lessons by course -------- */
-  async getLessonsByCourse(courseId: string) {
-    const { data, error } = await supabase
+export const CourseContentService = {
+  async getCourseContent(courseId: string): Promise<CourseLessonsData> {
+    const { data: lessons, error } = await supabase
       .from("lessons")
-      .select("*")
+      .select(`
+        id,
+        title,
+        order_index,
+        is_preview,
+        reading_time,
+        course_modules (
+          id,
+          title,
+          description,
+          position,
+          module_sections (
+            id,
+            type,
+            title,
+            subtitle,
+            content,
+            image_url,
+            key_points,
+            callout,
+            position
+          ),
+          quizzes (
+            id,
+            passing_score,
+            is_final,
+            quiz_questions (
+              id,
+              question,
+              type,
+              quiz_options (
+                id,
+                text,
+                is_correct
+              )
+            )
+          )
+        )
+      `)
       .eq("course_id", courseId)
-      .order("order_index", { ascending: true });
+      .order("order_index")
 
-    if (error) throw error;
-    return data;
+    if (error) throw error
+
+    return {
+      lessons: (lessons ?? []).map((lesson) => {
+        const modules: CourseModule[] = (lesson.course_modules ?? [])
+          .sort((a, b) => a.position - b.position)
+          .map((module) => {
+            const quiz = module.quizzes?.[0]
+
+            return {
+              id: module.id,
+              title: module.title,
+              description: module.description,
+              position: module.position,
+              sections: (module.module_sections ?? []).sort(
+                (a, b) => a.position - b.position
+              ),
+              quiz: quiz
+                ? {
+                    id: quiz.id,
+                    passing_score: quiz.passing_score,
+                    is_final: quiz.is_final,
+                    questions: quiz.quiz_questions.map((q) => ({
+                      id: q.id,
+                      question: q.question,
+                      type: q.type,
+                      options: q.quiz_options,
+                    })),
+                  }
+                : undefined,
+            }
+          })
+
+        const finalQuizModule = modules.find(
+          (m) => m.quiz?.is_final === true
+        )
+
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          order_index: lesson.order_index,
+          is_preview: lesson.is_preview,
+          reading_time: lesson.reading_time,
+          modules,
+          finalQuiz: finalQuizModule?.quiz,
+        }
+      }),
+    }
   },
-
-  /* -------- Get single lesson -------- */
-  async getLessonById(id: string) {
-    const { data, error } = await supabase
-      .from("lessons")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  /* -------- Create lesson -------- */
-  async createLesson(payload: LessonPayload) {
-    const { data, error } = await supabase
-      .from("lessons")
-      .insert({
-        ...payload,
-        status: "draft",
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  /* -------- Update lesson -------- */
-  async updateLesson(
-    id: string,
-    updates: Partial<LessonPayload & { status: "draft" | "published" }>
-  ) {
-    const { data, error } = await supabase
-      .from("lessons")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  /* -------- Publish all lessons in course -------- */
-  async publishLessonsByCourse(courseId: string) {
-    const { error } = await supabase
-      .from("lessons")
-      .update({ status: "published" })
-      .eq("course_id", courseId);
-
-    if (error) throw error;
-    return { success: true };
-  },
-
-  /* -------- Delete lesson -------- */
-  async deleteLesson(id: string) {
-    const { error } = await supabase
-      .from("lessons")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
-    return { message: "Lesson deleted successfully" };
-  },
-};
+}
