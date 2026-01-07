@@ -5,7 +5,7 @@ import { IconSearch } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ModeToggle } from "./toggle-theme";
+import { ModeSwitcher } from "./toggle-theme";
 import { Input } from "@/components/ui/input";
 
 interface SiteHeaderProps {
@@ -41,7 +41,7 @@ export function SiteHeader({ onSearch }: SiteHeaderProps) {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <ModeToggle />
+          <ModeSwitcher />
         </div>
       </div>
     </header>

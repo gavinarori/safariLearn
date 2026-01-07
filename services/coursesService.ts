@@ -177,15 +177,13 @@ export const getAllCourses = async (): Promise<CourseWithTrainer[]> => {
   }));
 };
 
-export const getEnrolledCourses = async (learnerId: string) => {
+export const getEnrolledCourses = async (userId: string) => {
   const { data, error } = await supabase
     .from("enrollments")
     .select(`
       id,
       progress,
-      completed,
       enrolled_at,
-
       course:courses (
         id,
         title,
@@ -194,25 +192,20 @@ export const getEnrolledCourses = async (learnerId: string) => {
         category,
         level,
         price,
-        status,
-
-        trainer:users (
-          id,
-          full_name,
-          avatar_url
-        )
+        status
       )
     `)
-    .eq("learner_id", learnerId)
-    .order("enrolled_at", { ascending: false });
+    .eq("user_id", userId)
+    .order("enrolled_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching enrolled courses:", error);
-    return [];
+    console.error("Error fetching enrolled courses:", error)
+    return []
   }
 
-  return data;
-};
+  return data
+}
+
 
 
 export const getCoursesByTrainer = async (trainerId: string): Promise<CourseWithTrainer[]> => {
@@ -294,93 +287,134 @@ export const getCourseById = async (id: string): Promise<CourseWithTrainer | nul
   return { ...course, trainer };
 };
 
-export const markLessonCompleted = async (enrollmentId: string, lessonId: string) => {
+export const markSectionCompleted = async (
+  userId: string,
+  sectionId: string,
+  moduleId: string
+) => {
   const { error } = await supabase
-    .from("lesson_progress")
+    .from("section_progress")
     .upsert(
       {
-        enrollment_id: enrollmentId,
-        lesson_id: lessonId,
+        user_id: userId,
+        section_id: sectionId,
+        module_id: moduleId,
         is_completed: true,
         completed_at: new Date().toISOString(),
       },
-      { onConflict: "enrollment_id,lesson_id" }
-    );
+      { onConflict: "user_id,section_id" }
+    )
+
+  if (error) throw error
+}
+
+
+export const recalculateModuleProgress = async (
+  userId: string,
+  moduleId: string
+) => {
+  const { data: sections } = await supabase
+    .from("module_sections")
+    .select("id")
+    .eq("module_id", moduleId)
+
+  const { data: completed } = await supabase
+    .from("section_progress")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("module_id", moduleId)
+    .eq("is_completed", true)
+
+  const isCompleted =
+    sections && sections.length > 0 &&
+    completed && completed.length === sections.length
+
+  await supabase
+    .from("module_progress")
+    .upsert(
+      {
+        user_id: userId,
+        module_id: moduleId,
+        is_completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null,
+      },
+      { onConflict: "user_id,module_id" }
+    )
+
+  return isCompleted
+}
+
+
+export const recalculateCourseProgress = async (
+  enrollmentId: string,
+  userId: string
+) => {
+  const { data: modules } = await supabase
+    .from("course_modules")
+    .select("id")
+
+  const { data: completed } = await supabase
+    .from("module_progress")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("is_completed", true)
+
+  const progress =
+    modules?.length
+      ? Math.round((completed?.length ?? 0) / modules.length * 100)
+      : 0
+
+  await supabase
+    .from("enrollments")
+    .update({ progress })
+    .eq("id", enrollmentId)
+
+  return progress === 100
+}
+
+export const fetchEnrollmentId = async (
+  userId: string,
+  courseId: string
+) => {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("course_id", courseId)
+   .maybeSingle()
+
 
   if (error) {
-    console.error("Error updating lesson progress:", error);
-    throw error;
+    console.error("Error fetching enrollment ID:", error)
+    return null
   }
-};
 
+  return data?.id || null
+}
 
-export const recalculateEnrollmentProgress = async (enrollmentId: string) => {
-  const { data: completedLessons } = await supabase
-    .from("lesson_progress")
-    .select("id")
-    .eq("enrollment_id", enrollmentId)
-    .eq("is_completed", true);
-
-  const { data: enrollment } = await supabase
+export const fetchEnrollment = async (
+  userId: string,
+  courseId: string
+) => {
+  const { data, error } = await supabase
     .from("enrollments")
     .select(`
       id,
-      course:courses (
-        id,
-        lessons:lessons ( id )
+      progress,
+      lesson_progress (
+        lesson_id,
+        is_completed
       )
     `)
-    .eq("id", enrollmentId)
-    .single();
-
-  const totalLessons = enrollment?.course?.[0]?.lessons?.length ?? 0;
-  const completedCount = completedLessons?.length ?? 0;
-  const progress = totalLessons === 0 ? 0 : Math.round((completedCount / totalLessons) * 100);
-  const completed = progress === 100;
-
-  const { error } = await supabase
-    .from("enrollments")
-    .update({ progress, completed })
-    .eq("id", enrollmentId);
-
-  if (error) {
-    console.error("Error updating enrollment progress:", error);
-    throw error;
-  }
-
-  return { progress, completed };
-};
-
-
-export const fetchEnrollmentId = async (learnerId: string, courseId: string) => {
-  const { data, error } = await supabase
-    .from("enrollments")
-    .select("id")
-    .eq("learner_id", learnerId)
+    .eq("user_id", userId)
     .eq("course_id", courseId)
-    .single();
+ .maybeSingle()
+
 
   if (error) {
-    console.error("Error fetching enrollment ID:", error);
-    return null;
+    console.error("Error fetching enrollment:", error)
+    return null
   }
-  return data.id;
-};
 
-export const fetchEnrollment = async (learnerId: string, courseId: string) => {
-  const { data, error } = await supabase
-    .from("enrollments")
-    .select(`
-      id,
-      lesson_progress:lesson_progress ( lesson_id, is_completed )
-    `)
-    .eq("learner_id", learnerId)
-    .eq("course_id", courseId)
-    .single();
-
-  if (error) {
-    console.error("Error fetching enrollment:", error);
-    return null;
-  }
-  return data;
-};
+  return data
+}
