@@ -148,9 +148,7 @@ export default function LearnPage() {
     }
   }, [userId, currentModuleId, completedSections])
 
-  /* ============================
-     Navigation Helpers
-  ============================ */
+
 
   const isFirstModule =
     currentLessonIndex === 0 && currentModuleIndex === 0
@@ -192,9 +190,7 @@ export default function LearnPage() {
     setShowQuiz(false)
   }
 
-  /* ============================
-     Guards
-  ============================ */
+
 
   if (!courseId) return <div className="p-8 text-center">Invalid course</div>
 
@@ -211,9 +207,7 @@ export default function LearnPage() {
   if (!currentModule)
     return <div className="p-8 text-center">Module not found</div>
 
-  /* ============================
-     Render
-  ============================ */
+
 
   return (
     <LearningLayout
