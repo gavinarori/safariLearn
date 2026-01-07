@@ -16,6 +16,9 @@ export function CheckpointQuiz({ quiz, onComplete }: CheckpointQuizProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({})
   const [showResults, setShowResults] = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
+const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null)
+
 
   const question = quiz.questions[currentQuestion]
   const isAnswered = question.id in selectedAnswers
@@ -29,20 +32,46 @@ export function CheckpointQuiz({ quiz, onComplete }: CheckpointQuizProps) {
     return q.options.find((opt) => opt.id === answerId)?.is_correct
   }).length
 
-  const handleAnswer = (optionId: string) => {
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [question.id]: optionId,
-    }))
-  }
+const handleAnswer = (optionId: string) => {
+  if (isLocked) return
 
-  const handleNext = () => {
-    if (currentQuestion < quiz.questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
-    } else if (!showResults) {
-      setShowResults(true)
-    }
+  setSelectedAnswers((prev) => ({
+    ...prev,
+    [question.id]: optionId,
+  }))
+
+  const selectedOption = question.options.find((o) => o.id === optionId)
+  const correct = selectedOption?.is_correct ?? false
+
+  setIsAnswerCorrect(correct)
+  setIsLocked(!correct)
+}
+
+const handleTryAgain = () => {
+  setSelectedAnswers((prev) => {
+    const copy = { ...prev }
+    delete copy[question.id]
+    return copy
+  })
+
+  setIsLocked(false)
+  setIsAnswerCorrect(null)
+}
+
+
+const handleNext = () => {
+  if (!isAnswerCorrect) return
+
+  setIsLocked(false)
+  setIsAnswerCorrect(null)
+
+  if (currentQuestion < quiz.questions.length - 1) {
+    setCurrentQuestion(currentQuestion + 1)
+  } else {
+    setShowResults(true)
   }
+}
+
 
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/0">
@@ -99,9 +128,22 @@ export function CheckpointQuiz({ quiz, onComplete }: CheckpointQuizProps) {
               </div>
             </div>
 
-            <Button onClick={handleNext} disabled={!isAnswered} className="w-full">
-              {currentQuestion === quiz.questions.length - 1 ? "See Results" : "Next Question"}
-            </Button>
+           {isAnswerCorrect === false ? (
+  <Button onClick={handleTryAgain} variant="destructive" className="w-full">
+    Try Again
+  </Button>
+) : (
+  <Button
+    onClick={handleNext}
+    disabled={!isAnswerCorrect}
+    className="w-full"
+  >
+    {currentQuestion === quiz.questions.length - 1
+      ? "Finish Quiz"
+      : "Next Question"}
+  </Button>
+)}
+
           </>
         ) : (
           <>

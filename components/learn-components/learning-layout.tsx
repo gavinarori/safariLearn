@@ -5,6 +5,7 @@ import type React from "react"
 import type { ReactNode } from "react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
+import { ModeSwitcher } from "../toggle-theme";
 
 interface LearningLayoutProps {
   sidebar: ReactNode
@@ -20,6 +21,9 @@ export function LearningLayout({ sidebar, children }: LearningLayoutProps) {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="h-4" />
           <span className="text-sm font-medium text-muted-foreground">Learning</span>
+          <div className="ml-auto flex items-center gap-2">
+          <ModeSwitcher />
+        </div>
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
       </SidebarInset>
