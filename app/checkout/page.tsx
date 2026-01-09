@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Suspense } from "react"
 import { CheckoutContent } from "@/components/checkout/checkout-content"
 
 const plans = {
@@ -27,19 +26,18 @@ const plans = {
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams()
-  const planId = (searchParams.get("plan") as "starter" | "professional") || "starter"
-  const paymentMethod = (searchParams.get("method") as "paystack" | "mpesa") || "paystack"
+  const planId =
+    (searchParams.get("plan") as keyof typeof plans) || "starter"
 
   const plan = plans[planId]
-
   const [isProcessing, setIsProcessing] = useState(false)
 
   if (!plan) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md w-full">
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground mb-4">Invalid plan selected</p>
+            <p className="text-center mb-4">Invalid plan selected</p>
             <Link href="/pricing">
               <Button className="w-full">Back to Pricing</Button>
             </Link>
@@ -51,19 +49,18 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50">
+      <div className="border-b sticky top-0 bg-background z-50">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <a href="/pricing" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <span>← Back to Pricing</span>
-          </a>
+          <Link href="/pricing" className="text-sm text-muted-foreground">
+            ← Back to Pricing
+          </Link>
         </div>
       </div>
 
       <Suspense fallback={null}>
         <CheckoutContent
           plan={plan}
-          paymentMethod={paymentMethod}
+          planId={planId}
           isProcessing={isProcessing}
           setIsProcessing={setIsProcessing}
         />

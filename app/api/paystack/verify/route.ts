@@ -8,7 +8,7 @@ const supabaseAdmin = createClient()
 export async function POST(req: Request) {
   const { reference, courseId, userId } = await req.json()
 
-  // 1️⃣ Verify with Paystack
+
   const paystackRes = await fetch(
     `https://api.paystack.co/transaction/verify/${reference}`,
     {
