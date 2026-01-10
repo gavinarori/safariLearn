@@ -2,17 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { getCourseById, CourseWithTrainer } from "@/services/coursesService"
-import { createEnrollment, getEnrollment } from "@/services/enrollmentServices"
 import { createClient } from "@/superbase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, Share2, Star, Clock, Loader2 } from "lucide-react"
 
+import { getCourseById, CourseWithTrainer } from "@/services/coursesService"
+import { getEnrollment } from "@/services/enrollmentServices"
+import { getCurrentUserProfile } from "@/services/userService"
 
-import { EventCalendar } from "@/components/event-calendar/event-calendar"
 import {
   CalendarEvent,
   getFullCalendarForUser,
@@ -20,13 +15,20 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
 } from "@/services/calendarService"
-import { getCurrentUserProfile } from "@/services/userService"
 
+import { EventCalendar } from "@/components/event-calendar/event-calendar"
 import { SidebarProvider } from "@/components/ui/sidebar"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+import { Heart, Share2, Star, Clock, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 export default function CourseDetailsPage() {
-  const { id } = useParams() as { id: string }
+  const { id: courseId } = useParams<{ id: string }>()
   const router = useRouter()
   const supabase = createClient()
 
@@ -38,85 +40,81 @@ export default function CourseDetailsPage() {
   const [buttonLoading, setButtonLoading] = useState(false)
   const [events, setEvents] = useState<CalendarEvent[]>([])
 
-
+  /**
+   * Fetch course + enrollment
+   */
   useEffect(() => {
     const fetchCourse = async () => {
       try {
         setLoading(true)
-        const data = await getCourseById(id)
+
+        const data = await getCourseById(courseId)
         setCourse(data)
 
         const {
           data: { user },
         } = await supabase.auth.getUser()
-        if (user) {
-          const enrollment = await getEnrollment(id, user.id)
-          if (enrollment) setIsEnrolled(true)
 
-          if (enrollment) {
-            const userEvents = await getFullCalendarForUser(id, user.id)
+        if (!user) return
 
-            const mappedEvents: CalendarEvent[] = userEvents.map((e: any) => ({
-              id: e.id,
-              title: e.title,
-              description: e.description,
-              start_time: e.start_time,
-              end_time: e.end_time,
-              start: new Date(e.start_time),
-              end: new Date(e.end_time),
-              color: e.color ?? "blue",
-              course_id: e.course_id,
-              user_id: e.user_id,
-            }))
+        const enrollment = await getEnrollment(courseId, user.id)
+        if (!enrollment) return
 
-            setEvents(mappedEvents)
-          }
-        }
+        setIsEnrolled(true)
+
+        const userEvents = await getFullCalendarForUser(courseId, user.id)
+
+        setEvents(
+          userEvents.map((e: any) => ({
+            ...e,
+            start: new Date(e.start_time),
+            end: new Date(e.end_time),
+            color: e.color ?? "blue",
+          }))
+        )
       } catch (err: any) {
-        setError(err.message || "Failed to fetch course")
+        setError(err.message || "Failed to load course")
       } finally {
         setLoading(false)
       }
     }
 
-    if (id) fetchCourse()
-  }, [id])
+    if (courseId) fetchCourse()
+  }, [courseId])
 
-
+  /**
+   * Realtime calendar updates
+   */
   useEffect(() => {
+    if (!isEnrolled) return
+
     const channel = supabase
-      .channel("course-events-realtime")
+      .channel("course-events")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "course_events",
-          filter: `course_id=eq.${id}`,
+          filter: `course_id=eq.${courseId}`,
         },
-        async (payload) => {
-          console.log("Realtime change:", payload)
+        async () => {
           const {
             data: { user },
           } = await supabase.auth.getUser()
+
           if (!user) return
 
-          const userEvents = await getFullCalendarForUser(id, user.id)
+          const userEvents = await getFullCalendarForUser(courseId, user.id)
 
-          const mapped: CalendarEvent[] = userEvents.map((e: any) => ({
-            id: e.id,
-            title: e.title,
-            description: e.description,
-            start_time: e.start_time,
-            end_time: e.end_time,
-            start: new Date(e.start_time),
-            end: new Date(e.end_time),
-            color: e.color ?? "blue",
-            course_id: e.course_id,
-            user_id: e.user_id,
-          }))
-
-          setEvents(mapped)
+          setEvents(
+            userEvents.map((e: any) => ({
+              ...e,
+              start: new Date(e.start_time),
+              end: new Date(e.end_time),
+              color: e.color ?? "blue",
+            }))
+          )
         }
       )
       .subscribe()
@@ -124,51 +122,47 @@ export default function CourseDetailsPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [id])
+  }, [courseId, isEnrolled])
 
-
+  /**
+   * Enroll handler
+   */
   const handleEnroll = async () => {
     try {
       setButtonLoading(true)
 
-      const { data } = await supabase.auth.getUser()
-      if (!data.user) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
         router.push("/login")
         return
       }
 
       if (isEnrolled) {
-        router.push(`/learn/${id}`)
+        router.push(`/learn/${courseId}`)
         return
       }
 
       const profile = await getCurrentUserProfile()
       if (!profile) throw new Error("Profile missing")
 
-      if (!profile.company_id) {
-        router.push(
-          `/company/register?redirect=/courses/${id}`
-        )
-        return
-      }
-
-      // 💳 PAID COURSE → CHECKOUT
+      // Paid → Pricing
       if (course?.price && course.price > 0) {
-        router.push(
-          `/checkout?courseId=${id}&companyId=${profile.company_id}`
-        )
+        router.push(`/pricing?courseId=${courseId}`)
         return
       }
 
-      // ✅ FREE COURSE → DIRECT ENROLL
-      const enrollment = await createEnrollment(id, data.user.id)
-      if (!enrollment) {
-        toast.error("No available seats")
-        return
-      }
+      // Free → Direct enroll
+      await supabase.from("enrollments").insert({
+        user_id: user.id,
+        course_id: courseId,
+        status: "active",
+      })
 
-      setIsEnrolled(true)
-      router.push(`/learn/${id}`)
+      toast.success("Enrolled successfully")
+      router.push(`/learn/${courseId}`)
     } catch (err) {
       console.error(err)
       toast.error("Enrollment failed")
@@ -177,7 +171,9 @@ export default function CourseDetailsPage() {
     }
   }
 
-
+  /**
+   * Calendar handlers
+   */
   const handleEventAdd = async (event: any) => {
     try {
       const {
@@ -187,181 +183,130 @@ export default function CourseDetailsPage() {
       if (!user) throw new Error("User not found")
 
       const newEvent = await createCalendarEvent({
-  title: event.title,
-  description: event.description,
-  start_time: event.start.toISOString(),
-  end_time: event.end.toISOString(),
-  color: event.color,
-  course_id: id,
-  user_id: user.id,
-});
-
-
-      toast.success("Event created")
+        title: event.title,
+        description: event.description,
+        start_time: event.start.toISOString(),
+        end_time: event.end.toISOString(),
+        color: event.color,
+        course_id: courseId,
+        user_id: user.id,
+      })
 
       setEvents((prev) => [...prev, newEvent])
-    } catch (err) {
-      console.error(err)
+      toast.success("Event created")
+    } catch {
       toast.error("Failed to add event")
     }
   }
 
+  const handleEventUpdate = async (event: any) => {
+    if (!event.id) return
 
-const handleEventUpdate = async (event: any) => {
-  try {
-    if (!event.id) return;
-
-    // Strip allDay and location
-    const { allDay, location, ...cleanEvent } = event;
-
-const updated = await updateCalendarEvent(event.id, {
-  title: cleanEvent.title,
-  description: cleanEvent.description,
-  start_time: cleanEvent.start.toISOString(),
-  end_time: cleanEvent.end.toISOString(),
-  color: cleanEvent.color
-});
-
-
-    toast.success("Event updated");
+    const updated = await updateCalendarEvent(event.id, {
+      title: event.title,
+      description: event.description,
+      start_time: event.start.toISOString(),
+      end_time: event.end.toISOString(),
+      color: event.color,
+    })
 
     setEvents((prev) =>
-      prev.map((e) =>
-        e.id === updated.id
-          ? {
-              ...updated,
-            
-            }
-          : e
-      )
-    );
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to update event");
+      prev.map((e) => (e.id === updated.id ? updated : e))
+    )
+
+    toast.success("Event updated")
   }
-};
-
-
 
   const handleEventDelete = async (eventId: string) => {
-    try {
-      await deleteCalendarEvent(eventId)
-      toast.success("Event deleted")
-      setEvents((prev) => prev.filter((e) => e.id !== eventId))
-    } catch (err) {
-      console.error(err)
-      toast.error("Failed to delete event")
-    }
+    await deleteCalendarEvent(eventId)
+    setEvents((prev) => prev.filter((e) => e.id !== eventId))
+    toast.success("Event deleted")
   }
 
-
-  if (loading)
+  /**
+   * UI states
+   */
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
+  }
 
-  if (error)
+  if (error) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen">
-        <p className="text-red-500 font-semibold mb-3">Error: {error}</p>
+      <div className="flex flex-col items-center min-h-screen">
+        <p className="text-red-500 mb-4">{error}</p>
         <Button onClick={() => location.reload()}>Retry</Button>
       </div>
     )
+  }
 
-  if (!course) return <p className="text-center py-20">Course not found</p>
+  if (!course) {
+    return <p className="text-center py-20">Course not found</p>
+  }
 
-  const isFree = course.price === 0 || course.price === null
-  const buttonLabel = isEnrolled ? "Go to Course" : isFree ? "Start Learning" : "Enroll Now"
-
+  const isFree = !course.price || course.price === 0
+  const buttonLabel = isEnrolled
+    ? "Go to Course"
+    : isFree
+    ? "Start Learning"
+    : "Enroll Now"
 
   return (
     <div className="min-h-screen bg-background">
 
-      <div className="relative pb-12 overflow-hidden">
+      <div className="max-w-6xl mx-auto px-4 py-10 grid lg:grid-cols-3 gap-8">
+        {/* MAIN */}
+        <div className="lg:col-span-2">
+          <div className="flex gap-3 mb-4">
+            {course.category && <Badge>{course.category}</Badge>}
+            {course.level && <Badge variant="outline">{course.level}</Badge>}
+          </div>
 
-<div
-  className="absolute inset-0 z-0"
-  style={{
-    backgroundImage: `url("/tortoise-shell.svg")`,
-    backgroundRepeat: "repeat",
-    backgroundSize: "420px",
-    backgroundPosition: "center",
-    opacity: 0.3, 
-  }}
-/>
+          <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
+          <p className="text-muted-foreground mb-6">{course.description}</p>
 
-
-<div
-  className="absolute inset-0 z-[1]"
-  style={{
-    backgroundImage: `
-      linear-gradient(
-        to right,
-        hsl(var(--primary) / 0.12),
-        hsl(var(--accent) / 0.12)
-      )
-    `,
-  }}
-/>
-
-
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* MAIN CONTENT */}
-            <div className="lg:col-span-2">
-              <div className="flex gap-3 mb-4">
-                {course.category && <Badge variant="secondary">{course.category}</Badge>}
-                {course.level && <Badge variant="outline">{course.level}</Badge>}
+          <div className="flex gap-6 mb-6">
+            {course.language && (
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                {course.language}
               </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              {isFree ? "Free" : `$${course.price}`}
+            </div>
+          </div>
 
-              <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
-              <p className="text-lg text-muted-foreground mb-6">{course.description}</p>
+          {isEnrolled && (
+            <SidebarProvider>
+              <EventCalendar
+                courseId={courseId}
+                events={events}
+                onEventAdd={handleEventAdd}
+                onEventUpdate={handleEventUpdate}
+                onEventDelete={handleEventDelete}
+              />
+            </SidebarProvider>
+          )}
+        </div>
 
-              {/* COURSE STATS */}
-              <div className="flex flex-wrap gap-6 mb-8">
-                {course.language && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-muted-foreground" />
-                    <span>{course.language}</span>
-                  </div>
-                )}
+        {/* SIDEBAR */}
+        <Card className="sticky top-6">
+          <CardContent className="p-6">
+            <img
+              src={course.thumbnail_url || "/placeholder.svg"}
+              className="rounded mb-4"
+            />
 
-                <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{isFree ? "Free" : `$${course.price?.toFixed(2)}`}</span>
-                </div>
-              </div>
-
-              {/* CALENDAR (ONLY WHEN ENROLLED) */}
-              {isEnrolled && (
-                <div className="mb-10">
-                  <SidebarProvider>
-                    <EventCalendar
-                      courseId={id}
-                      events={events}
-                      onEventAdd={handleEventAdd}
-                      onEventUpdate={handleEventUpdate}
-                      onEventDelete={handleEventDelete}
-                      initialView="month"
-                    />
-                  </SidebarProvider>
-                </div>
-              )}
+            <div className="text-3xl font-bold mb-6">
+              {isFree ? "Free" : `$${course.price}`}
             </div>
 
-            {/* SIDEBAR */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-4 border-2">
-                <CardContent className="p-6">
-                  <div className="aspect-video bg-muted rounded-lg mb-6 overflow-hidden">
-                    <img src={course.thumbnail_url || "/placeholder.svg"} className="w-full h-full object-cover" />
-                  </div>
-
-                  <div className="text-3xl font-bold mb-6">{isFree ? "Free" : `$${course.price}`}</div>
-
-                <Button
+            <Button
               size="lg"
               className="w-full mb-3"
               onClick={handleEnroll}
@@ -370,71 +315,20 @@ const updated = await updateCalendarEvent(event.id, {
               {buttonLoading ? "Processing..." : buttonLabel}
             </Button>
 
-                  <Button variant="outline" size="lg" className="w-full bg-transparent" onClick={() => setIsFavorited(!isFavorited)}>
-                    <Heart className={`w-4 h-4 mr-2 ${isFavorited ? "fill-current" : ""}`} />
-                    {isFavorited ? "Favorited" : "Add to Favorites"}
-                  </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setIsFavorited(!isFavorited)}
+            >
+              <Heart className="w-4 h-4 mr-2" />
+              {isFavorited ? "Favorited" : "Add to Favorites"}
+            </Button>
 
-                  <Button variant="ghost" size="lg" className="w-full mt-3">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ABOUT + TRAINER */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            {course.trainer && (
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle>Meet Your Trainer</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-6">
-                    <Avatar className="w-20 h-20">
-                      <AvatarImage src={course.trainer.avatar_url || "/placeholder.svg"} />
-                      <AvatarFallback>{course.trainer.full_name?.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">{course.trainer.full_name}</h3>
-                      <p className="text-muted-foreground">{course.trainer.bio}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>About This Course</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Learn everything about {course.title} with structured lessons and expert guidance.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Student Feedback</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  No reviews yet — be the first after enrolling!
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+            <Button variant="ghost" className="w-full mt-3">
+              <Share2 className="w-4 h-4 mr-2" /> Share
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
