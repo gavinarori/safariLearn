@@ -2,10 +2,9 @@ import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { email, amount, currency, courseId, userId, companyName } = body
+    const { email, amount, courseId, planId } = await req.json()
 
-    if (!email || !amount || !courseId || !userId) {
+    if (!email || !amount || !courseId || !planId) {
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
@@ -20,14 +19,9 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email,
-        amount,          
-        currency: "KES", 
-        metadata: {
-          courseId,
-          userId,
-          companyName,
-        },
-        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
+        amount, // already in kobo
+        currency: "KES",
+        callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment?courseId=${courseId}&planId=${planId}`,
       }),
     })
 
@@ -42,9 +36,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(data.data)
   } catch (err) {
-    return NextResponse.json(
-      { message: "Server error" },
-      { status: 500 }
-    )
+    console.error("Paystack initialize error:", err)
+    return NextResponse.json({ message: "Server error" }, { status: 500 })
   }
 }

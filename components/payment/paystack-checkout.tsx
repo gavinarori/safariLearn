@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,8 +10,9 @@ import { createClient } from "@/superbase/client"
 const supabase = createClient()
 
 interface PaystackCheckoutProps {
-  amount: number // KES
-  planId: string // courseId
+  amount: number // Amount in KES
+  planId: string // Plan selected (starter/professional)
+  courseId: string // Actual course the user is enrolling in
   isProcessing: boolean
   setIsProcessing: (processing: boolean) => void
 }
@@ -20,6 +20,7 @@ interface PaystackCheckoutProps {
 export function PaystackCheckout({
   amount,
   planId,
+  courseId,
   isProcessing,
   setIsProcessing,
 }: PaystackCheckoutProps) {
@@ -34,8 +35,10 @@ export function PaystackCheckout({
       return
     }
 
+    // 1️⃣ Get logged-in user from Supabase client
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser()
 
     if (!user) {
@@ -46,28 +49,28 @@ export function PaystackCheckout({
     setIsProcessing(true)
 
     try {
-      const response = await fetch("/api/paystack/initialize", {
+      // 2️⃣ Initialize Paystack payment
+      const res = await fetch("/api/paystack/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: user.email,
-          amount: Math.round(amount * 100), // KES → kobo
+          amount: Math.round(amount * 100), // KES → Kobo
           currency: "KES",
-          courseId: planId,
-          userId: user.id,
+          courseId,
+          planId,
+          userId: user.id, // Pass userId for server verification
           companyName,
         }),
       })
 
-      const data = await response.json()
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || "Payment initialization failed")
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to initialize payment")
-      }
-
+      // 3️⃣ Redirect to Paystack payment page
       window.location.href = data.authorization_url
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed")
+    } catch (err: any) {
+      setError(err.message || "Payment failed")
       setIsProcessing(false)
     }
   }
@@ -103,7 +106,7 @@ export function PaystackCheckout({
         size="lg"
         className="w-full"
       >
-        {isProcessing ? "Processing..." : "Pay with Paystack"}
+        {isProcessing ? "Processing..." : `Pay KES ${amount.toFixed(2)}`}
       </Button>
 
       <div className="pt-4 border-t text-xs text-muted-foreground">

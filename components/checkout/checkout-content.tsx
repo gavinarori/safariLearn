@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PaystackCheckout } from "@/components/payment/paystack-checkout"
@@ -14,6 +13,7 @@ type Props = {
     description: string
   }
   planId: string
+  courseId: string
   isProcessing: boolean
   setIsProcessing: (v: boolean) => void
 }
@@ -21,6 +21,7 @@ type Props = {
 export function CheckoutContent({
   plan,
   planId,
+  courseId,
   isProcessing,
   setIsProcessing,
 }: Props) {
@@ -61,6 +62,7 @@ export function CheckoutContent({
             <PaystackCheckout
               amount={plan.price}
               planId={planId}
+              courseId={courseId}   
               isProcessing={isProcessing}
               setIsProcessing={setIsProcessing}
             />
