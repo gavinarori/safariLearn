@@ -52,13 +52,8 @@ const data = {
       icon: IconBook,
     },
     {
-      title: "Analytics",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Team",
-      url: "#",
+      title: "Invite Colleagues",
+      url: "/invite",
       icon: IconUsers,
     },
   ],
