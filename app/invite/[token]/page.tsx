@@ -11,14 +11,16 @@ const supabase = createClient()
 
 interface InviteData {
   email: string
-  courseName: string
   courseId: string
+  courseName: string
+  companyId: string
   companyName: string
 }
 
 export default function AcceptInvitePage() {
   const { token } = useParams() as { token: string }
   const router = useRouter()
+
   const [inviteData, setInviteData] = useState<InviteData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,33 +29,46 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     const loadInvite = async () => {
       try {
-        const { data: invite, error: inviteError } = await supabase
+        const { data: invite , error } = await supabase
           .from("invites")
-          .select(
-            `
+          .select(`
+            id,
             email,
             company_id,
-            companies (name)
-          `,
-          )
+            course_id,
+            status,
+            companies ( name ),
+            courses ( title )
+          `)
           .eq("token", token)
           .gt("expires_at", new Date().toISOString())
           .single()
 
-        if (inviteError || !invite) {
+        if (error || !invite) {
           setError("Invitation not found or has expired")
           return
         }
 
-        // For now, set sample data - in production this would come from the invite
+        // 🔹 Mark as viewed (first open only)
+        if (invite.status === "sent") {
+          await supabase
+            .from("invites")
+            .update({
+              status: "viewed",
+              viewed_at: new Date().toISOString(),
+            })
+            .eq("id", invite.id)
+        }
+
         setInviteData({
           email: invite.email,
-          courseName: "Data Protection Compliance",
-          courseId: "",
-          companyName: invite.companies?.name || "Company",
+          courseId: invite.course_id,
+          courseName: invite.courses.title,
+          companyId: invite.company_id,
+          companyName: invite.companies.name,
         })
       } catch (err) {
-        console.error("Error loading invite:", err)
+        console.error(err)
         setError("Failed to load invitation")
       } finally {
         setLoading(false)
@@ -64,25 +79,48 @@ export default function AcceptInvitePage() {
   }, [token])
 
   const handleAcceptInvite = async () => {
+    if (!inviteData) return
+
     setIsProcessing(true)
     try {
-      const { data: user } = await supabase.auth.getUser()
+      const { data } = await supabase.auth.getUser()
 
-      if (!user.user) {
-        // Redirect to signup with email
-        router.push(`/auth/signup?email=${encodeURIComponent(inviteData?.email || "")}`)
+      // 🔹 Not logged in → signup
+      if (!data.user) {
+        router.push(`/auth/signup?email=${encodeURIComponent(inviteData.email)}`)
         return
       }
 
-      // User is already logged in, accept invite and redirect to course
-      const { error: updateError } = await supabase.from("invites").update({ accepted: true }).eq("token", token)
+      // 🔹 Mark invite accepted
+      await supabase
+        .from("invites")
+        .update({
+          status: "accepted",
+          accepted: true,
+          accepted_at: new Date().toISOString(),
+        })
+        .eq("token", token)
 
-      if (updateError) throw updateError
+      // 🔹 Create enrollment
+      await supabase.from("enrollments").insert({
+        user_id: data.user.id,
+        course_id: inviteData.courseId,
+        company_id: inviteData.companyId,
+        status: "active",
+      })
 
-      // Redirect to course
-      router.push(`/learn/${inviteData?.courseId}`)
+      // 🔹 Mark invite enrolled
+      await supabase
+        .from("invites")
+        .update({
+          status: "enrolled",
+          enrolled_at: new Date().toISOString(),
+        })
+        .eq("token", token)
+
+      router.push(`/learn/${inviteData.courseId}`)
     } catch (err) {
-      console.error("Error accepting invite:", err)
+      console.error(err)
       setError("Failed to accept invitation")
     } finally {
       setIsProcessing(false)
@@ -91,30 +129,19 @@ export default function AcceptInvitePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
-          <p className="text-muted-foreground">Loading your invitation...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md border-destructive/50">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
           <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <AlertCircle className="w-12 h-12 text-destructive flex-shrink-0" />
-              <div>
-                <h2 className="font-semibold mb-2">Unable to Accept Invitation</h2>
-                <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button onClick={() => router.push("/")} variant="outline">
-                  Go to Home
-                </Button>
-              </div>
-            </div>
+            <AlertCircle className="w-10 h-10 text-destructive mb-4" />
+            <p className="text-sm text-muted-foreground">{error}</p>
           </CardContent>
         </Card>
       </div>
@@ -122,42 +149,39 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-transparent to-transparent flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-2">
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="w-12 h-12 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">You're Invited!</CardTitle>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="max-w-md w-full">
+        <CardHeader className="text-center">
+          <CheckCircle className="w-12 h-12 text-primary mx-auto mb-3" />
+          <CardTitle>You’re Invited 🎉</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-3 text-center">
-            <p className="text-muted-foreground">{inviteData?.companyName} has invited you to complete:</p>
-            <h2 className="text-xl font-semibold">{inviteData?.courseName}</h2>
-            <p className="text-sm text-muted-foreground">{inviteData?.email}</p>
+        <CardContent className="space-y-6 text-center">
+          <div>
+            <p className="text-muted-foreground">
+              {inviteData?.companyName} invited you to:
+            </p>
+            <h2 className="text-lg font-semibold">
+              {inviteData?.courseName}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              {inviteData?.email}
+            </p>
           </div>
 
-          <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
-            <p className="font-medium">What's Next?</p>
-            <ul className="space-y-1 text-muted-foreground">
-              <li>✓ Learn at your own pace with our reading-first content</li>
-              <li>✓ Take quizzes at checkpoint milestones</li>
-              <li>✓ Track your progress anytime</li>
-            </ul>
-          </div>
-
-          <Button onClick={handleAcceptInvite} disabled={isProcessing} className="w-full gap-2">
+          <Button
+            onClick={handleAcceptInvite}
+            disabled={isProcessing}
+            className="w-full"
+          >
             {isProcessing ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Accepting...
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Processing...
               </>
             ) : (
               "Accept & Start Learning"
             )}
           </Button>
-
-          <p className="text-xs text-center text-muted-foreground">Don't have an account? We'll create one for you.</p>
         </CardContent>
       </Card>
     </div>
