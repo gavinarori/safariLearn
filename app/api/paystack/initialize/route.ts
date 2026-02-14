@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email,
-        amount, // already in kobo
+        amount, 
         currency: "KES",
         callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment?courseId=${courseId}&planId=${planId}`,
       }),

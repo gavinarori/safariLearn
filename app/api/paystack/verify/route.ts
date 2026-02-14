@@ -16,7 +16,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // Verify environment variables
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
         !process.env.SUPABASE_SERVICE_ROLE_KEY ||
         !process.env.PAYSTACK_SECRET_KEY) {
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
 
     console.log("Authenticated user:", user.id)
 
-    // 1️⃣ Verify payment with Paystack
+    //  Verify payment with Paystack
     console.log("Verifying payment with Paystack...")
     const paystackRes = await fetch(
       `https://api.paystack.co/transaction/verify/${reference}`,
@@ -87,7 +86,7 @@ export async function POST(req: Request) {
     const amount = result.data.amount / 100
     const currency = result.data.currency
 
-    // 2️⃣ Deduplicate payment
+    //  Deduplicate payment
     console.log("Checking for existing payment...")
     const { data: existingPayment, error: paymentCheckError } = await supabase
       .from("payments")
@@ -108,7 +107,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true })
     }
 
-    // 3️⃣ Save payment
+    //  Save payment
     console.log("Saving payment...")
     const { error: paymentError } = await supabase.from("payments").insert({
       course_id: courseId,
@@ -128,7 +127,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // 4️⃣ Get user from public.users table
+    //  Get user from public.users table
     console.log("Getting user from users table...")
     const { data: userData, error: userFetchError } = await supabase
       .from("users")
@@ -144,7 +143,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // 5️⃣ Enroll user
+    //  Enroll user
     console.log("Enrolling user...")
     const { error: enrollmentError } = await supabase
       .from("enrollments")
