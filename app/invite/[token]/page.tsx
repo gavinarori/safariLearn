@@ -9,139 +9,123 @@ import { createClient } from "@/superbase/client"
 
 const supabase = createClient()
 
-interface InviteData {
-  email: string
-  courseId: string
-  courseName: string
-  companyId: string
-  companyName: string
-}
-
 export default function AcceptInvitePage() {
-  const { token } = useParams() as { token: string }
+  const { token } = useParams<{ token: string }>()
   const router = useRouter()
 
-  const [inviteData, setInviteData] = useState<InviteData | null>(null)
+  const [invite, setInvite] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
     const loadInvite = async () => {
-      try {
-        const { data: invite , error } = await supabase
-          .from("invites")
-          .select(`
-            id,
-            email,
-            company_id,
-            course_id,
-            status,
-            companies ( name ),
-            courses ( title )
-          `)
-          .eq("token", token)
-          .gt("expires_at", new Date().toISOString())
-          .single()
+      const { data, error } = await supabase
+        .from("invites")
+        .select(`
+          id,
+          email,
+          company_id,
+          course_id,
+          status,
+          companies ( name ),
+          courses ( title )
+        `)
+        .eq("token", token)
+        .gt("expires_at", new Date().toISOString())
+        .single()
 
-        if (error || !invite) {
-          setError("Invitation not found or has expired")
-          return
-        }
-
-        // 🔹 Mark as viewed (first open only)
-        if (invite.status === "sent") {
-          await supabase
-            .from("invites")
-            .update({
-              status: "viewed",
-              viewed_at: new Date().toISOString(),
-            })
-            .eq("id", invite.id)
-        }
-
-        setInviteData({
-          email: invite.email,
-          courseId: invite.course_id,
-          courseName: invite.courses.title,
-          companyId: invite.company_id,
-          companyName: invite.companies.name,
-        })
-      } catch (err) {
-        console.error(err)
-        setError("Failed to load invitation")
-      } finally {
+      if (error || !data) {
+        setError("Invite not found or expired")
         setLoading(false)
+        return
       }
+
+      if (data.status === "sent") {
+        await supabase
+          .from("invites")
+          .update({
+            status: "viewed",
+            viewed_at: new Date().toISOString(),
+          })
+          .eq("id", data.id)
+      }
+
+      setInvite(data)
+      setLoading(false)
     }
 
     loadInvite()
   }, [token])
 
-  const handleAcceptInvite = async () => {
-    if (!inviteData) return
+  const handleAccept = async () => {
+    if (!invite) return
+    setProcessing(true)
 
-    setIsProcessing(true)
-    try {
-      const { data } = await supabase.auth.getUser()
+    const { data: auth } = await supabase.auth.getUser()
 
-      // 🔹 Not logged in → signup
-      if (!data.user) {
-        router.push(`/auth/signup?email=${encodeURIComponent(inviteData.email)}`)
-        return
-      }
+    //  Not logged in → redirect to signup/login WITH redirectTo
+    if (!auth.user) {
+      const redirectTo = `${window.location.origin}/invite/${token}`
+      router.push(
+        `/signup?email=${encodeURIComponent(invite.email)}&redirectTo=${encodeURIComponent(redirectTo)}`
+      )
+      return
+    }
 
-      // 🔹 Mark invite accepted
-      await supabase
-        .from("invites")
-        .update({
-          status: "accepted",
-          accepted: true,
-          accepted_at: new Date().toISOString(),
-        })
-        .eq("token", token)
+    //  Accept invite
+    await supabase
+      .from("invites")
+      .update({
+        status: "accepted",
+        accepted: true,
+        accepted_at: new Date().toISOString(),
+      })
+      .eq("id", invite.id)
 
-      // 🔹 Create enrollment
+    //  Prevent duplicate enrollment
+    const { data: existingEnrollment } = await supabase
+      .from("enrollments")
+      .select("id")
+      .eq("user_id", auth.user.id)
+      .eq("course_id", invite.course_id)
+      .maybeSingle()
+
+    if (!existingEnrollment) {
       await supabase.from("enrollments").insert({
-        user_id: data.user.id,
-        course_id: inviteData.courseId,
-        company_id: inviteData.companyId,
+        user_id: auth.user.id,
+        course_id: invite.course_id,
+        company_id: invite.company_id,
         status: "active",
       })
-
-      // 🔹 Mark invite enrolled
-      await supabase
-        .from("invites")
-        .update({
-          status: "enrolled",
-          enrolled_at: new Date().toISOString(),
-        })
-        .eq("token", token)
-
-      router.push(`/learn/${inviteData.courseId}`)
-    } catch (err) {
-      console.error(err)
-      setError("Failed to accept invitation")
-    } finally {
-      setIsProcessing(false)
     }
+
+    await supabase
+      .from("invites")
+      .update({
+        status: "enrolled",
+        enrolled_at: new Date().toISOString(),
+      })
+      .eq("id", invite.id)
+
+    router.push(`/learn/${invite.course_id}`)
   }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <Loader2 className="animate-spin w-8 h-8" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6">
-            <AlertCircle className="w-10 h-10 text-destructive mb-4" />
-            <p className="text-sm text-muted-foreground">{error}</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="mx-auto text-destructive mb-2" />
+            <p>{error}</p>
           </CardContent>
         </Card>
       </div>
@@ -152,35 +136,18 @@ export default function AcceptInvitePage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <CheckCircle className="w-12 h-12 text-primary mx-auto mb-3" />
-          <CardTitle>You’re Invited 🎉</CardTitle>
+          <CheckCircle className="mx-auto text-primary w-10 h-10 mb-2" />
+          <CardTitle>You’re invited 🎉</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6 text-center">
-          <div>
-            <p className="text-muted-foreground">
-              {inviteData?.companyName} invited you to:
-            </p>
-            <h2 className="text-lg font-semibold">
-              {inviteData?.courseName}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              {inviteData?.email}
-            </p>
-          </div>
+        <CardContent className="text-center space-y-4">
+          <p className="text-muted-foreground">
+            {invite.companies.name} invited you to:
+          </p>
+          <p className="font-semibold">{invite.courses.title}</p>
+          <p className="text-xs text-muted-foreground">{invite.email}</p>
 
-          <Button
-            onClick={handleAcceptInvite}
-            disabled={isProcessing}
-            className="w-full"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Processing...
-              </>
-            ) : (
-              "Accept & Start Learning"
-            )}
+          <Button onClick={handleAccept} disabled={processing} className="w-full">
+            {processing ? "Processing..." : "Accept & Start Learning"}
           </Button>
         </CardContent>
       </Card>

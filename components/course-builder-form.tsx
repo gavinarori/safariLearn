@@ -23,10 +23,7 @@ import {
   uploadCourseThumbnail,
 } from "@/services/coursesService"
 
-import {
-  LessonsService,
-  uploadLessonVideo,
-} from "@/services/lessonsService"
+
 
 import { createClient } from "@/superbase/client"
 import { TrainerCoursesGrid } from "./TrainerCoursesGrid"
@@ -102,61 +99,6 @@ export function CourseBuilderForm() {
 
 
 
-  const handleAddLesson = async () => {
-    if (!courseId) return alert("Create course first")
-
-    const order_index = course.lessons.length + 1
-
-    const lesson = await LessonsService.createLesson({
-      course_id: courseId,
-      title: "New Lesson",
-      order_index,
-      is_preview: false,
-    })
-
-    setCourse((prev) => ({
-      ...prev,
-      lessons: [
-        ...prev.lessons,
-        {
-          id: lesson.id,
-          title: lesson.title,
-          type: "video",
-          order_index,
-        },
-      ],
-    }))
-  }
-
-  const handleDeleteLesson = async (lessonId: string) => {
-    await LessonsService.deleteLesson(lessonId)
-
-    setCourse((prev) => ({
-      ...prev,
-      lessons: prev.lessons.filter((l) => l.id !== lessonId),
-    }))
-  }
-
-  const handleUpdateLesson = async (
-    lessonId: string,
-    updates: Partial<Lesson>
-  ) => {
-    await LessonsService.updateLesson(lessonId, updates)
-
-    setCourse((prev) => ({
-      ...prev,
-      lessons: prev.lessons.map((l) =>
-        l.id === lessonId ? { ...l, ...updates } : l
-      ),
-    }))
-  }
-
-  const handleLessonVideoUpload = async (lessonId: string, file: File) => {
-    if (!trainerId || !courseId) return
-
-    const url = await uploadLessonVideo(trainerId, courseId, file)
-    await handleUpdateLesson(lessonId, { video_url: url })
-  }
 
   const handlePublishCourse = async () => {
   if (!courseId) return
@@ -246,7 +188,7 @@ export function CourseBuilderForm() {
         <Card className="p-6 space-y-4">
           <div className="flex justify-between">
             <h2 className="text-xl font-semibold">Lessons</h2>
-            <Button variant="outline" onClick={handleAddLesson}>
+            <Button variant="outline" >
               <IconPlus className="w-4 h-4 mr-2" />
               Add Lesson
             </Button>
@@ -262,16 +204,12 @@ export function CourseBuilderForm() {
 
                 <Input
                   value={lesson.title}
-                  onChange={(e) =>
-                    handleUpdateLesson(lesson.id, {
-                      title: e.target.value,
-                    })
-                  }
+                 
                 />
 
                 <Button
                   variant="ghost"
-                  onClick={() => handleDeleteLesson(lesson.id)}
+                  
                 >
                   <IconTrash />
                 </Button>
@@ -280,9 +218,7 @@ export function CourseBuilderForm() {
               {/* VIDEO UPLOAD */}
               <DragDropZone
                 accept="video/mp4"
-                onDrop={(file) =>
-                  handleLessonVideoUpload(lesson.id, file)
-                }
+               
               />
 
               {/* VIDEO PREVIEW */}
