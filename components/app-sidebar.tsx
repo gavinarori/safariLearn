@@ -36,21 +36,17 @@ const data = {
       url: "/dashboard",
       icon: IconDashboard,
     },
+     {
+      title: "Explore Courses",
+      url: "/courses",
+      icon: IconBook,
+    },
     {
       title: "My Learning",
       url: "/my-learning",
       icon: IconBookmark,
     },
-    {
-      title: "Create Course",
-      url: "/builder",
-      icon: IconPlaylist,
-    },
-    {
-      title: "Explore Courses",
-      url: "/courses",
-      icon: IconBook,
-    },
+   
     {
       title: "Invite Colleagues",
       url: "/invite",
@@ -62,28 +58,6 @@ const data = {
       title: "Profile",
       url: "/profile",
       icon: IconUser,
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-  ],
-  documents: [
-    {
-      name: "My Courses",
-      url: "/my-learning",
-      icon: IconBook,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
     },
   ],
 }
@@ -107,7 +81,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
