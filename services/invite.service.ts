@@ -12,14 +12,41 @@ export interface CourseInvite {
 export interface InviteHistoryItem {
   id: string
   email: string
+  role: "admin" | "employee"
+  token: string
+  expiresAt: string
+  accepted: boolean
   status: "sent" | "viewed" | "accepted" | "enrolled"
+
   createdAt: string
   viewedAt?: string | null
   acceptedAt?: string | null
   enrolledAt?: string | null
+
+  company: {
+    id: string
+    name: string
+  } | null
+
   course: {
     id: string
     title: string | null
+    slug: string | null
+    level: string | null
+    category: string | null
+    price: number | null
+  } | null
+
+  enrollment?: {
+    id: string
+    status: string
+    enrolledAt: string
+  } | null
+
+  user?: {
+    id: string
+    full_name: string | null
+    role: string
   } | null
 }
 
@@ -124,60 +151,119 @@ export class InviteManager {
     return results
   }
 
-  /** Get company-wide invite history */
   static async getCompanyInviteHistory(): Promise<InviteHistoryItem[]> {
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) throw new Error("Not authenticated")
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth.user) throw new Error("Not authenticated")
 
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("company_id, role")
-      .eq("id", auth.user.id)
-      .single()
+  // Get user company + role
+  const { data: userData, error: userError } = await supabase
+    .from("users")
+    .select("company_id, role")
+    .eq("id", auth.user.id)
+    .single()
 
-    if (userError || !userData?.company_id) {
-      throw new Error("User has no company")
-    }
-
-    if (!["company_admin", "super_admin"].includes(userData.role)) {
-      throw new Error("Unauthorized")
-    }
-
-    const { data, error } = await supabase
-      .from("invites")
-      .select(`
-        id,
-        email,
-        status,
-        created_at,
-        viewed_at,
-        accepted_at,
-        enrolled_at,
-        course:courses (
-          id,
-          title
-        )
-      `)
-      .eq("company_id", userData.company_id)
-      .order("created_at", { ascending: false })
-
-    if (error) throw error
-
-    return (
-      data?.map((invite) => ({
-        id: invite.id,
-        email: invite.email,
-        status: invite.status,
-        createdAt: invite.created_at,
-        viewedAt: invite.viewed_at,
-        acceptedAt: invite.accepted_at,
-        enrolledAt: invite.enrolled_at,
-        course: invite.course
-          ? { id: invite.course.id, title: invite.course.title }
-          : null,
-      })) ?? []
-    )
+  if (userError || !userData?.company_id) {
+    throw new Error("User has no company")
   }
+
+  if (!["company_admin", "super_admin"].includes(userData.role)) {
+    throw new Error("Unauthorized")
+  }
+
+  // Fetch EVERYTHING from invites + joins
+  const { data, error } = await supabase
+    .from("invites")
+    .select(`
+      *,
+      company:companies (
+        id,
+        name
+      ),
+      course:courses (
+        id,
+        title,
+        slug,
+        level,
+        category,
+        price
+      )
+    `)
+    .eq("company_id", userData.company_id)
+    .order("created_at", { ascending: false })
+
+  if (error) throw error
+
+  if (!data?.length) return []
+
+  // 🔎 Get related users by email
+  const emails = data.map((invite) => invite.email)
+
+  const { data: users } = await supabase
+    .from("users")
+    .select("id, email, full_name, role")
+    .in("email", emails)
+
+  const userMap = new Map(
+    users?.map((u) => [u.email, u]) ?? []
+  )
+
+  // 🔎 Get related enrollments
+  const courseIds = data.map((i) => i.course_id)
+
+  const { data: enrollments } = await supabase
+    .from("enrollments")
+    .select("id, course_id, user_id, status, enrolled_at")
+    .eq("company_id", userData.company_id)
+    .in("course_id", courseIds)
+
+  const enrollmentMap = new Map(
+    enrollments?.map((e) => [`${e.course_id}-${e.user_id}`, e]) ?? []
+  )
+
+  // 🧠 Merge everything
+  return data.map((invite) => {
+    const user = userMap.get(invite.email)
+
+    const enrollment =
+      user &&
+      enrollmentMap.get(`${invite.course_id}-${user.id}`)
+
+    return {
+      id: invite.id,
+      email: invite.email,
+      role: invite.role,
+      token: invite.token,
+      expiresAt: invite.expires_at,
+      accepted: invite.accepted,
+      status: invite.status,
+
+      createdAt: invite.created_at,
+      viewedAt: invite.viewed_at,
+      acceptedAt: invite.accepted_at,
+      enrolledAt: invite.enrolled_at,
+
+      company: invite.company ?? null,
+      course: invite.course ?? null,
+
+      enrollment: enrollment
+        ? {
+            id: enrollment.id,
+            status: enrollment.status,
+            enrolledAt: enrollment.enrolled_at,
+          }
+        : null,
+
+      user: user
+        ? {
+            id: user.id,
+            full_name: user.full_name,
+            role: user.role,
+          }
+        : null,
+    }
+  })
+}
+
 
   /** Send invite email */
 private static async sendInviteEmail(

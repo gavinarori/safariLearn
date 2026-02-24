@@ -60,24 +60,28 @@ export default function MyLearningPage() {
 
       const data = await getEnrolledCourses(user.id)
 
-      const mapped: EnrolledCourseUI[] =
-        data?.map((e: any) => {
-          let status: EnrolledCourseUI["status"] = "not-started"
+const mapped: EnrolledCourseUI[] =
+  data?.map((e: any) => {
+    const progress = Number(e.progress?.progress_percent ?? 0)
+    const isCompleted = e.progress?.is_completed ?? false
 
-          if (e.completed) status = "completed"
-          else if (e.progress > 0) status = "in-progress"
+    let status: EnrolledCourseUI["status"] = "not-started"
 
-          return {
-            id: e.course.id,
-            title: e.course.title,
-            instructor:
-              e.course.trainer?.full_name ?? "Unknown Trainer",
-            thumbnail: e.course.thumbnail_url,
-            progress: e.progress ?? 0,
-            status,
-            favorite: false,
-          }
-        }) || []
+    if (isCompleted || progress === 100) {
+      status = "completed"
+    } else if (progress > 0) {
+      status = "in-progress"
+    }
+
+    return {
+      id: e.course.id,
+      title: e.course.title,
+      thumbnail: e.course.thumbnail_url,
+      progress,
+      status,
+      favorite: false,
+    }
+  }) ?? []
 
       setCourses(mapped)
       setLoading(false)
@@ -112,6 +116,7 @@ export default function MyLearningPage() {
       )
     )
   }
+  
 
   if (loading) {
   return (
@@ -277,9 +282,6 @@ export default function MyLearningPage() {
 
               <div className="p-4">
                 <h3 className="font-bold mb-1">{course.title}</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  {course.instructor}
-                </p>
 
                 <div className="mb-4">
                   <div className="flex justify-between text-xs mb-1">
