@@ -92,9 +92,20 @@ export function ChartAreaInteractive() {
     return date >= start
   })
 
-  if (loading) {
-    return <div className="p-6 text-muted-foreground">Loading chart...</div>
-  }
+if (loading) {
+  return (
+    <Card>
+      <CardHeader className="space-y-3">
+        <div className="h-6 w-40 bg-muted rounded animate-pulse" />
+        <div className="h-4 w-60 bg-muted rounded animate-pulse" />
+      </CardHeader>
+
+      <CardContent className="px-6 pb-6">
+        <div className="h-[250px] w-full rounded-md bg-muted animate-pulse" />
+      </CardContent>
+    </Card>
+  )
+}
 
   return (
     <Card className="@container/card">

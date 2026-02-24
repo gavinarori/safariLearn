@@ -38,9 +38,25 @@ export function SectionCards() {
     load()
   }, [])
 
-  if (loading) {
-    return <div className="p-6 text-muted-foreground">Loading metrics...</div>
-  }
+ if (loading) {
+  return (
+    <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      {[...Array(4)].map((_, i) => (
+        <Card key={i} className="animate-pulse">
+          <CardHeader className="space-y-3">
+            <div className="h-4 w-24 rounded bg-muted" />
+            <div className="h-8 w-20 rounded bg-muted" />
+            <div className="h-5 w-16 rounded bg-muted" />
+          </CardHeader>
+          <CardFooter className="space-y-2">
+            <div className="h-4 w-40 rounded bg-muted" />
+            <div className="h-3 w-32 rounded bg-muted" />
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  )
+}
 
   if (!data) {
     return <div className="p-6 text-destructive">Failed to load dashboard data</div>
