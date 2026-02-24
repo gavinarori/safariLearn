@@ -178,11 +178,11 @@ export const getAllCourses = async (): Promise<CourseWithTrainer[]> => {
 };
 
 export const getEnrolledCourses = async (userId: string) => {
-  const { data, error } = await supabase
+  const { data: enrollments, error } = await supabase
     .from("enrollments")
     .select(`
       id,
-      progress,
+      status,
       enrolled_at,
       course:courses (
         id,
@@ -196,17 +196,37 @@ export const getEnrolledCourses = async (userId: string) => {
       )
     `)
     .eq("user_id", userId)
-    .order("enrolled_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching enrolled courses:", error)
+    console.error(error)
     return []
   }
 
-  return data
+  if (!enrollments?.length) return []
+
+  const courseIds = enrollments.map(e => e.course.id)
+
+  // Step 2 — Fetch progress separately
+  const { data: progressData } = await supabase
+    .from("course_progress")
+    .select("course_id, progress_percent, is_completed")
+    .eq("user_id", userId)
+    .in("course_id", courseIds)
+
+  // Convert to lookup map
+  const progressMap = new Map(
+    progressData?.map(p => [p.course_id, p]) ?? []
+  )
+
+  // Step 3 — Merge
+  return enrollments.map(e => ({
+    ...e,
+    progress: progressMap.get(e.course.id) ?? {
+      progress_percent: 0,
+      is_completed: false
+    }
+  }))
 }
-
-
 
 export const getCoursesByTrainer = async (trainerId: string): Promise<CourseWithTrainer[]> => {
   const { data: courses, error } = await supabase
@@ -309,64 +329,116 @@ export const markSectionCompleted = async (
 }
 
 
-export const recalculateModuleProgress = async (
+export const recalculateCourseProgress = async (
   userId: string,
-  moduleId: string
+  courseId: string
 ) => {
-  const { data: sections } = await supabase
-    .from("module_sections")
+  // 1️⃣ Get modules for this course
+  const { data: modules, error: moduleError } = await supabase
+    .from("course_modules")
     .select("id")
-    .eq("module_id", moduleId)
+    .eq("course_id", courseId)
 
-  const { data: completed } = await supabase
-    .from("section_progress")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("module_id", moduleId)
-    .eq("is_completed", true)
+  if (moduleError) throw moduleError
 
-  const isCompleted =
-    sections && sections.length > 0 &&
-    completed && completed.length === sections.length
+  if (!modules || modules.length === 0) {
+    await supabase
+      .from("course_progress")
+      .upsert(
+        {
+          user_id: userId,
+          course_id: courseId,
+          progress_percent: 0,
+          is_completed: false,
+          completed_at: null,
+        },
+        { onConflict: "user_id,course_id" }
+      )
 
-  await supabase
+    return false
+  }
+
+  const moduleIds = modules.map((m) => m.id)
+
+  // 2️⃣ Get completed modules for this course
+  const { data: completed, error: completedError } = await supabase
     .from("module_progress")
+    .select("module_id")
+    .eq("user_id", userId)
+    .eq("is_completed", true)
+    .in("module_id", moduleIds)
+
+  if (completedError) throw completedError
+
+  const progress = Math.round(
+    ((completed?.length ?? 0) / moduleIds.length) * 100
+  )
+
+  const isCompleted = progress === 100
+
+  // 3️⃣ Upsert into course_progress
+  await supabase
+    .from("course_progress")
     .upsert(
       {
         user_id: userId,
-        module_id: moduleId,
+        course_id: courseId,
+        progress_percent: progress,
         is_completed: isCompleted,
         completed_at: isCompleted ? new Date().toISOString() : null,
       },
-      { onConflict: "user_id,module_id" }
+      { onConflict: "user_id,course_id" }
     )
 
   return isCompleted
 }
 
 
-export const recalculateCourseProgress = async (
+export const recalculateEnrollmentProgress = async (
   enrollmentId: string,
-  userId: string
+  userId: string,
+  courseId: string
 ) => {
-  const { data: modules } = await supabase
+  // Get modules for this course only
+  const { data: modules, error: moduleError } = await supabase
     .from("course_modules")
     .select("id")
+    .eq("course_id", courseId)
 
-  const { data: completed } = await supabase
+  if (moduleError) throw moduleError
+
+  if (!modules || modules.length === 0) {
+    await supabase
+      .from("enrollments")
+      .update({ progress: 0 })
+      .eq("id", enrollmentId)
+
+    return false
+  }
+
+  const moduleIds = modules.map((m) => m.id)
+
+  // Get completed modules for this user for THIS course
+  const { data: completed, error: completedError } = await supabase
     .from("module_progress")
-    .select("id")
+    .select("module_id")
     .eq("user_id", userId)
     .eq("is_completed", true)
+    .in("module_id", moduleIds)
 
-  const progress =
-    modules?.length
-      ? Math.round((completed?.length ?? 0) / modules.length * 100)
-      : 0
+  if (completedError) throw completedError
 
+  const progress = Math.round(
+    ((completed?.length ?? 0) / moduleIds.length) * 100
+  )
+
+  // Update enrollment progress
   await supabase
     .from("enrollments")
-    .update({ progress })
+    .update({
+      progress,
+      status: progress === 100 ? "completed" : "active",
+    })
     .eq("id", enrollmentId)
 
   return progress === 100
