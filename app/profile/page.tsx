@@ -25,6 +25,7 @@ import {
   EyeOff,
 } from "lucide-react"
 import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ProfileService, UserProfile } from "@/services/profile.service"
 
@@ -141,9 +142,60 @@ const handleChangePassword = async () => {
     }
   }
 
-  if (loading) {
-    return <div className="p-6">Loading profile...</div>
-  }
+if (loading) {
+  return (
+
+        <div className="max-w-6xl mx-auto p-6 space-y-6 animate-pulse">
+
+          {/* Header */}
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-muted rounded" />
+            <div className="h-4 w-96 bg-muted rounded" />
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-3">
+            <div className="h-10 w-28 bg-muted rounded" />
+            <div className="h-10 w-28 bg-muted rounded" />
+            <div className="h-10 w-28 bg-muted rounded" />
+          </div>
+
+          {/* Avatar Card */}
+          <Card>
+            <CardContent className="p-6 flex gap-6 items-center">
+              <div className="w-24 h-24 rounded-full bg-muted" />
+              <div className="space-y-2">
+                <div className="h-6 w-40 bg-muted rounded" />
+                <div className="h-4 w-24 bg-muted rounded" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Form Card */}
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <div className="h-4 w-24 bg-muted rounded" />
+                  <div className="h-10 w-full bg-muted rounded" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-4 w-24 bg-muted rounded" />
+                  <div className="h-10 w-full bg-muted rounded" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="h-4 w-20 bg-muted rounded" />
+                <div className="h-24 w-full bg-muted rounded" />
+              </div>
+
+              <div className="h-10 w-40 bg-muted rounded" />
+            </CardContent>
+          </Card>
+        </div>
+  )
+}
 
   return (
     <SidebarProvider
@@ -156,6 +208,7 @@ const handleChangePassword = async () => {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
+        <SiteHeader />
         <div className="min-h-screen bg-background">
           <div className="max-w-6xl mx-auto p-4 lg:p-6">
             <h1 className="text-3xl font-bold mb-1">Account Settings</h1>

@@ -116,10 +116,22 @@ export function CourseExplorer({ searchQuery = "" }: CourseExplorerProps) {
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">Loading courses...</div>
-          </div>
-        ) : filteredCourses.length === 0 ? (
+  <div className="space-y-2 p-4">
+    {[...Array(7)].map((_, i) => (
+      <div
+        key={i}
+        className="rounded-lg border border-border bg-card p-3 flex gap-3 animate-pulse"
+      >
+        <div className="w-12 h-12 rounded-md bg-muted" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-3/4 rounded bg-muted" />
+          <div className="h-3 w-1/3 rounded bg-muted" />
+        </div>
+        <div className="w-4 h-4 rounded bg-muted mt-1" />
+      </div>
+    ))}
+  </div>
+) : filteredCourses.length === 0 ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-sm text-muted-foreground">No courses found</div>
           </div>
