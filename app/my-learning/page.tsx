@@ -28,11 +28,11 @@ const supabase = createClient()
 type EnrolledCourseUI = {
   id: string
   title: string
-  instructor: string
-  thumbnail: string | null
-  progress: number
+  instructor?: string
+  thumbnail?: string | null
+  progress?: number
   status: "not-started" | "in-progress" | "completed"
-  favorite: boolean
+  favorite?: boolean
 }
 
 export default function MyLearningPage() {
@@ -61,7 +61,7 @@ export default function MyLearningPage() {
       const data = await getEnrolledCourses(user.id)
 
 const mapped: EnrolledCourseUI[] =
-  data?.map((e: any) => {
+  data?.map((e:any) => {
     const progress = Number(e.progress?.progress_percent ?? 0)
     const isCompleted = e.progress?.is_completed ?? false
 
