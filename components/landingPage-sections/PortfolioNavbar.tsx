@@ -54,7 +54,7 @@ export const PortfolioNavbar = () => {
               <IconInnerShadowTop className="size-4" />
             </div>
             <span className="text-base font-semibold text-foreground">
-              safariLearn
+              safari
             </span>
           </Link>
 

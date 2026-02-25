@@ -216,10 +216,7 @@ export function CourseBuilderForm() {
               </div>
 
               {/* VIDEO UPLOAD */}
-              <DragDropZone
-                accept="video/mp4"
-               
-              />
+             
 
               {/* VIDEO PREVIEW */}
               {lesson.video_url && (

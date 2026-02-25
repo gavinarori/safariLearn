@@ -57,7 +57,7 @@ export default function CourseDetailsPage() {
 
         if (!user) return
 
-        const enrollment = await getEnrollment(courseId, user.id)
+        const enrollment = await getEnrollment(courseId)
         if (!enrollment) return
 
         setIsEnrolled(true)

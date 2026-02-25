@@ -89,7 +89,7 @@ export function SignupForm({
           avatar_url: avatarUrl || null,
           bio: bio || null,
         },
-        redirectTo
+      
       )
 
       // ✅ Non-invite fallback

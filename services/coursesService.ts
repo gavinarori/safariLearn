@@ -10,7 +10,7 @@ export type Course = {
   thumbnail_url: string | null;
   trailer_url: string | null;
   price: number | null;
-  category: string | null;
+  category: string | null | undefined;  
   level: string | null;
   language: string | null;
   status: "draft" | "published" | "archived";
@@ -27,7 +27,7 @@ export type Trainer = {
 };
 
 export type CourseWithTrainer = Course & {
-  trainer?: Trainer | null;
+  trainer?: Trainer | null | undefined;
 };
 
 const supabase = createClient();
@@ -204,7 +204,7 @@ export const getEnrolledCourses = async (userId: string) => {
 
   if (!enrollments?.length) return []
 
-  const courseIds = enrollments.map(e => e.course.id)
+  const courseIds = enrollments.map((e: any) => e.course.id)
 
   // Step 2 — Fetch progress separately
   const { data: progressData } = await supabase
@@ -219,7 +219,7 @@ export const getEnrolledCourses = async (userId: string) => {
   )
 
   // Step 3 — Merge
-  return enrollments.map(e => ({
+  return enrollments.map((e: any) => ({
     ...e,
     progress: progressMap.get(e.course.id) ?? {
       progress_percent: 0,

@@ -21,7 +21,7 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import InvitePageSkeleton from "@/components/InvitePageSkeleton"
-import { InviteManager } from "@/services/invite.service"
+import {  InviteManager, type InviteHistoryItem } from "@/services/invite.service"
 import { getAllCourses } from "@/services/coursesService"
 
 interface InviteRow {
@@ -29,36 +29,24 @@ interface InviteRow {
   email: string
 }
 
-interface Course {
-  id: string
-  title: string
-  category?: string
-  level?: string
-}
+type Course = {
+  id: string;
+  trainer_id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  trailer_url: string | null;
+  price: number | null;
+  category: string | null | undefined;  
+  level: string | null;
+  language: string | null;
+  status: "draft" | "published" | "archived";
+  created_at: string;
+  updated_at: string | null;
+};
 
-interface InviteResult {
-  email: string
-  status: "invited" | "enrolled"
-}
 
-interface InviteHistory {
-  id: string
-  email: string
-  status: "sent" | "viewed" | "accepted" | "enrolled"
-  createdAt: string
-  viewedAt?: string | null
-  acceptedAt?: string | null
-  enrolledAt?: string | null
-  expiresAt: string
-  course: {
-    id: string
-    title: string | null
-  } | null
-  role?: string
-  token?: string
-  accepted?: boolean
-  company?: string
-}
 
 const STEPS = [
   { number: 1, label: "Select Course", key: "course" },
@@ -72,12 +60,12 @@ export default function InvitePage() {
   const [inviteRows, setInviteRows] = useState<InviteRow[]>([{ id: "1", email: "" }])
   const [customMessage, setCustomMessage] = useState("")
 
-  const [history, setHistory] = useState<InviteHistory[]>([])
+  const [history, setHistory] = useState<InviteHistoryItem[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
 
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [isSending, setIsSending] = useState(false)
-  const [results, setResults] = useState<InviteResult[]>([])
+  const [results, setResults] = useState<Array<{ email: string; status: string; inviteId?: any; enrollmentId?: any }>>([])
   const [showResults, setShowResults] = useState(false)
 
   useEffect(() => {
@@ -128,7 +116,7 @@ export default function InvitePage() {
         message: customMessage,
       })
 
-      setResults(res)
+      setResults(res )
       setShowResults(true)
       await loadInviteHistory()
 
