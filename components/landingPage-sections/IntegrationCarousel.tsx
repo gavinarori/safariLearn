@@ -17,27 +17,27 @@ type IntegrationCarouselProps = {
 }
 
 const defaultTopRowApps: IntegrationApp[] = [
-  { name: "YouTube", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/youtube.svg" },
-  { name: "Google Drive", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googledrive.svg" },
-  { name: "Notion", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/notion.svg" },
-  { name: "Figma", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/figma.svg" },
-  { name: "Dropbox", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/dropbox.svg" },
-  { name: "Vimeo", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/vimeo.svg" },
+  { name: "Workday", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/workday.svg" },
+  { name: "BambooHR", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/bamboohr.svg" },
+  { name: "ADP", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/adp.svg" },
+  { name: "Okta", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/okta.svg" },
+  { name: "Microsoft Teams", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftteams.svg" },
+  { name: "Slack", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/slack.svg" },
 ]
 
 const defaultBottomRowApps: IntegrationApp[] = [
+  { name: "Salesforce", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/salesforce.svg" },
+  { name: "Google Workspace", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googleworkspace.svg" },
   { name: "Zoom", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/zoom.svg" },
-  { name: "Slack", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/slack.svg" },
-  { name: "Google Meet", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlemeet.svg" },
-  { name: "Discord", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/discord.svg" },
-  { name: "Loom", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/loom.svg" },
-  { name: "Miro", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/miro.svg" },
+  { name: "Power BI", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/powerbi.svg" },
+  { name: "SAP SuccessFactors", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/sap.svg" }, // Approximate icon
+  { name: "OneLogin", logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/onelogin.svg" },
 ]
 
 export const IntegrationCarousel = ({
-  title = "Works with the tools trainers already use.",
-  subtitle = "Upload videos, PDFs, slides, and course materials from your favorite platforms — everything organized in one learning space.",
-  buttonText = "See how it works",
+  title = "Seamless with your enterprise stack",
+  subtitle = "Integrate effortlessly with HRIS, SSO, productivity tools, and analytics platforms. Auto-sync employee data, enable secure company logins, track training ROI in your existing dashboards — all without disruption.",
+  buttonText = "View All Integrations",
   topRowApps = defaultTopRowApps,
   bottomRowApps = defaultBottomRowApps,
 }: IntegrationCarouselProps) => {
@@ -125,15 +125,13 @@ export const IntegrationCarousel = ({
               className="flex items-center justify-center w-24 h-24 rounded-3xl flex-shrink-0 
                 bg-card shadow-sm border border-border"
             >
-              <img src={app.logo} alt={app.name} className="w-9 h-9 object-contain" />
+              <img src={app.logo} alt={`${app.name} logo`} className="w-9 h-9 object-contain" />
             </div>
           ))}
         </div>
 
-        {/* Fade Right */}
+        {/* Fade gradients */}
         <div className="absolute right-0 top-0 bottom-0 w-60 pointer-events-none bg-gradient-to-r from-transparent to-background" />
-
-        {/* Fade Left */}
         <div className="absolute left-0 top-0 bottom-0 w-60 pointer-events-none bg-gradient-to-l from-transparent to-background" />
 
         {/* Bottom row */}
@@ -147,7 +145,7 @@ export const IntegrationCarousel = ({
               className="flex items-center justify-center w-24 h-24 rounded-3xl flex-shrink-0 
                 bg-card shadow-sm border border-border"
             >
-              <img src={app.logo} alt={app.name} className="w-9 h-9 object-contain" />
+              <img src={app.logo} alt={`${app.name} logo`} className="w-9 h-9 object-contain" />
             </div>
           ))}
         </div>
