@@ -16,44 +16,44 @@ type FAQSectionProps = {
 
 const defaultFAQs: FAQItem[] = [
   {
-    question: "What is this platform and who is it for?",
+    question: "What is this platform and who is it built for?",
     answer:
-      "Our platform is a modern Learning Management System designed for trainers, instructors, and organizations who want to deliver structured courses online. Learners can enroll, watch lessons, follow structured curriculums, participate in discussions, and track learning progress — all in one place.",
+      "This is an enterprise-grade corporate training platform designed for companies that want to deliver structured, company-paid learning to their employees. Focus on reading-first courses with built-in quizzes, manager performance tracking, and clear ROI visibility — no individual learner sign-ups, no creator marketplace, no community forums.",
   },
   {
-    question: "How do trainers create and manage their courses?",
+    question: "How do companies enroll and manage their teams?",
     answer:
-      "Trainers can easily create courses through a simple dashboard. Upload video lessons, add modules, create curriculums, manage learners, and engage with them through course discussions. No technical knowledge is required — everything is handled through an intuitive interface.",
+      "Admins (HR or L&D leads) bulk-enroll employees or entire departments via CSV upload, SSO, or HRIS integrations (e.g., Workday, BambooHR). Courses are assigned centrally, progress auto-syncs, and managers access real-time dashboards to monitor completion, quiz scores, and skill gaps — no manual chasing required.",
   },
   {
-    question: "Do learners need an account to access the courses?",
+    question: "What makes the courses structured and effective?",
     answer:
-      "Yes. Learners create a free account to enroll in courses, access content, join discussions, and track their progress. Some courses may be free while others may require enrollment or payment, depending on the trainer.",
+      "Courses are reading-first with clear modules, key takeaways, and mandatory quizzes for assessment. This format drives higher retention and completion (often 90%+ in structured programs). Everything is company-curated or expert-provided — consistent quality, no user-generated content.",
   },
   {
-    question: "Does the platform support discussions and forums?",
+    question: "How do managers track performance and impact?",
     answer:
-      "Absolutely. Each course includes a built-in discussion space where learners can ask questions, interact with trainers, and participate in topic-based forums. Discussions are organized per lesson and per course for easy navigation.",
+      "Managers get dedicated dashboards showing team completion rates, average quiz scores, individual progress, and trends over time. Export reports for performance reviews or compliance. Tie training directly to business outcomes like faster onboarding or skills uplift.",
   },
   {
-    question: "Can the platform handle video content?",
+    question: "Does it support compliance and regulated training?",
     answer:
-      "Yes. Trainers can upload or link video lessons directly into the platform. Videos are optimized for smooth playback across all devices, and each lesson can include descriptions, materials, and discussions beneath it.",
+      "Yes — ideal for industries needing audit trails, certification tracking, and completion records. Features include mandatory quizzes, expiration reminders, and integration with HR systems for automated compliance reporting.",
   },
   {
-    question: "Is there a limit to how many courses I can create?",
+    question: "Are there integrations with our existing tools?",
     answer:
-      "No. Trainers can create as many courses, modules, and lessons as they need. The platform is built to scale as your content and learner base grows.",
+      "Absolutely. Seamless connections with major HRIS (Workday, ADP, BambooHR), SSO providers (Okta, OneLogin), productivity suites (Microsoft Teams, Slack, Google Workspace), and analytics (Power BI). Auto-provision users, sync data, and embed insights where your team already works.",
   },
   {
-    question: "How do payments work for paid courses?",
+    question: "Is it secure and enterprise-ready?",
     answer:
-      "Trainers can mark courses as free or paid. When payments are enabled, learners can purchase courses through a secure payment checkout. Trainers receive payouts for their enrolled learners depending on their chosen plan.",
+      "Built for scale: SOC 2 compliant, SSO/SAML support, role-based access (admins, managers, employees), data encryption, and audit logs. Companies control all access — no public profiles or external sharing.",
   },
   {
-    question: "Is the platform mobile-friendly?",
+    question: "How does pricing work for companies?",
     answer:
-      "Yes. Both trainers and learners can access the platform on desktop, tablet, or mobile. All pages, lessons, and discussions are fully responsive.",
+      "Company-paid subscriptions based on active users or seats. Predictable pricing with volume discounts for larger teams. No per-learner fees for individuals — everything is organization-managed. Contact us for a custom quote or demo.",
   },
 ]
 

@@ -21,23 +21,23 @@ type DataPoint = {
 
 const stats: StatItem[] = [
   {
-    value: "10k+",
-    description: "Active learners\nworldwide",
+    value: "40-60%",
+    description: "Reduction in training time\nvs traditional methods",
     delay: 0,
   },
   {
-    value: "500+",
-    description: "Lessons published\nby experts",
+    value: "90%+",
+    description: "Course completion rates\nachieved by top teams",
     delay: 0.2,
   },
   {
-    value: "150+",
-    description: "Communities & courses\nto explore",
+    value: "200+",
+    description: "Companies scaling skills\nwith structured programs",
     delay: 0.4,
   },
   {
-    value: "4.9/5",
-    description: "Average learner\nsatisfaction",
+    value: "4.8/5",
+    description: "From L&D managers\n& training leads",
     delay: 0.6,
   },
 ]
@@ -64,7 +64,7 @@ const generateDataPoints = (): DataPoint[] => {
   return points
 }
 
-export const BankingScaleHero = () => {
+export const CorporateTrainingHero = () => {  // Renamed for clarity
   const [isVisible, setIsVisible] = useState(false)
   const [dataPoints] = useState<DataPoint[]>(generateDataPoints())
   const [typingComplete, setTypingComplete] = useState(false)
@@ -94,7 +94,7 @@ export const BankingScaleHero = () => {
                   transition={{ duration: 0.8, ease: "easeOut" }}
                   className="block whitespace-nowrap overflow-hidden text-primary dark:text-primary-foreground"
                 >
-                  Built for modern learning
+                  Built for corporate training teams
                 </motion.span>
 
                 {/* Typing cursor */}
@@ -115,37 +115,34 @@ export const BankingScaleHero = () => {
 
             {/* TITLE */}
             <h2 className="text-[40px] font-normal leading-tight tracking-tight text-gray-900 dark:text-gray-100 mb-6">
-              Powering the next generation of learning{" "}
+              Close skills gaps at scale{" "}
               <span className="opacity-40">
-                with courses, community, and real-time collaboration.
+                with company-paid, structured courses and real-time manager tracking.
               </span>
             </h2>
 
             {/* DESCRIPTION */}
             <p className="text-lg leading-6 text-gray-700 dark:text-gray-300 opacity-80 mt-0 mb-6">
-              Our platform brings together expert-led courses, in-lesson discussions, and a vibrant
-              learning community — all in one place. Learn, connect, and grow with people who share your goals.
+              Enroll your entire team in focused, reading-first programs complete with quizzes and assessments. Deliver consistent training, track quiz scores and completion in real time, and equip managers with powerful dashboards — all company-managed, no individual sign-ups or marketplaces required.
             </p>
 
             {/* CTA BUTTON */}
             <button
               className="
                 relative inline-flex justify-center items-center leading-4 text-center cursor-pointer whitespace-nowrap
-                outline-none font-medium h-9 px-4 mt-5 text-sm group rounded-lg
-                bg-white/50 dark:bg-black/40 backdrop-blur-sm
-                text-gray-800 dark:text-gray-100
-                border border-gray-200 dark:border-gray-700
-                shadow-sm hover:shadow-md transition-all duration-200
+                outline-none font-medium h-9 px-6 mt-5 text-sm group rounded-lg
+                bg-teal-600 hover:bg-teal-700 text-white
+                shadow-md hover:shadow-lg transition-all duration-200
               "
             >
               <span className="flex items-center gap-1">
-                Explore the platform
+                Book a Demo
                 <ArrowRight className="w-4 h-4 -mr-1 transition-transform duration-150 group-hover:translate-x-1" />
               </span>
             </button>
           </div>
 
-          {/* RIGHT SECTION — ANIMATED HEIGHT LINES */}
+          {/* RIGHT SECTION — ANIMATED HEIGHT LINES (unchanged, fits "growth" theme for skills/performance) */}
           <div className="col-span-12 md:col-span-6">
             <div className="relative w-full h-[416px] -ml-[200px]">
               <div className="absolute top-0 left-[302px] w-[680px] h-[416px] pointer-events-none">
@@ -169,15 +166,12 @@ export const BankingScaleHero = () => {
                       style={{
                         left: `${point.left}px`,
                         top: `${point.top}px`,
-
-                        // Neutral gradients for both dark & light
                         background:
                           point.direction === "down"
                             ? "linear-gradient(rgb(180 200 180) 0%, rgb(180 200 180) 10%, rgba(156, 217, 93, 0.1) 40%, rgba(113, 210, 240, 0) 75%)"
                             : "linear-gradient(to top, rgb(180 200 180) 0%, rgb(180 200 180) 10%, rgba(156, 217, 93, 0.1) 40%, rgba(113, 210, 240, 0) 75%)",
                       }}
                     >
-                      {/* Animated dot */}
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={isVisible ? { opacity: [0, 1] } : {}}
@@ -212,6 +206,9 @@ export const BankingScaleHero = () => {
                       transition={{ duration: 1.5, delay: stat.delay }}
                       className="flex flex-col gap-2"
                     >
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {stat.value}
+                      </p>
                       <p className="text-xs leading-[13.2px] text-gray-700 dark:text-gray-300 whitespace-pre-line">
                         {stat.description}
                       </p>

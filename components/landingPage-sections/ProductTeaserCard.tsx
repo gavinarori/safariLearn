@@ -19,17 +19,17 @@ type ProductTeaserCardProps = {
 
 export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
   const {
-    dailyVolume = "5,200+",
-    dailyVolumeLabel = "DAILY ACTIVE LEARNERS",
-    headline = "A Modern Learning Management System for Teams and Institutions",
-    subheadline = "Deliver structured learning, manage classes, track progress, and engage students with built-in forums, discussions, quizzes, and organized course content — all in one platform.",
-    description = "Designed for trainers, educators, and organizations, our LMS simplifies course creation, student management, assessments, and learner engagement.",
-    videoSrc = "/videos/lms-showcase.mp4",
-    posterSrc = "/study-group-african-people.jpg",
-    primaryButtonText = "Explore Courses",
-    primaryButtonHref = "/courses",
-    secondaryButtonText = "For Trainers",
-    secondaryButtonHref = "/trainers",
+    dailyVolume = "12,000+",
+    dailyVolumeLabel = "EMPLOYEE PROGRESS POINTS TRACKED DAILY",
+    headline = "Enterprise Training Platform for Measurable Workforce Development",
+    subheadline = "Companies enroll teams in structured, reading-first courses with quizzes. Managers get real-time dashboards to track completion, scores, and performance impact — all company-controlled and paid.",
+    description = "Deliver consistent, high-quality training across your organization. Reduce admin time, close skills gaps faster, and prove ROI with built-in assessments and manager visibility. No marketplaces, no individual sign-ups — just scalable corporate learning.",
+    videoSrc = "/videos/corporate-dashboard-showcase.mp4",
+    posterSrc = "/african-american-business-people-analyzing-company-charts-diagrams-laptop-create-startup-presentation-paperwork-report-doing-teamwork-collaboration-plan-research-information.jpg", // Suggest: blurred screenshot of team progress/quiz results
+    primaryButtonText = "Book a Demo",
+    primaryButtonHref = "/demo",
+    secondaryButtonText = "View Manager Features",
+    secondaryButtonHref = "/managers",
   } = props
 
   return (
@@ -50,21 +50,7 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
               bg-muted dark:bg-muted/30
             "
           >
-            <a
-              href={primaryButtonHref}
-              onClick={(e) => e.preventDefault()}
-              className="flex flex-col gap-1 text-muted-foreground"
-            >
-              <motion.span
-                initial={{ transform: "translateY(20px)", opacity: 0 }}
-                animate={{ transform: "translateY(0px)", opacity: 1 }}
-                transition={{ duration: 0.4, ease: [0.645, 0.045, 0.355, 1], delay: 0.6 }}
-                className="text-sm uppercase tracking-tight font-mono flex items-center gap-1"
-              >
-                {dailyVolumeLabel}
-                <ArrowUpRight className="w-[0.71em] h-[0.71em]" />
-              </motion.span>
-            </a>
+           
 
             {/* HEADLINE */}
             <h1
@@ -74,6 +60,7 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
                 text-foreground 
                 max-w-[520px] mb-6
                 font-semibold
+              
               "
             >
               {headline}
@@ -82,6 +69,11 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
             {/* SUBHEADLINE */}
             <p className="text-lg leading-7 text-muted-foreground max-w-[520px] mb-6">
               {subheadline}
+            </p>
+
+            {/* DESCRIPTION */}
+            <p className="text-base leading-6 text-muted-foreground/90 max-w-[520px] mb-10 opacity-90">
+              {description}
             </p>
 
             {/* BUTTONS */}
@@ -141,7 +133,7 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
               backgroundPosition: "center",
             }}
           >
-            {/* Hide video for now (you chose display none) */}
+            {/* Video hidden per your original; uncomment when ready */}
             <video
               src={videoSrc}
               autoPlay

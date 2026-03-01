@@ -1,6 +1,6 @@
-import { PortfolioNavbar } from "@/components/landingPage-sections/PortfolioNavbar"
+import {  CorporateTrainingNavbar} from "@/components/landingPage-sections/PortfolioNavbar"
 import { ProductTeaserCard } from "@/components/landingPage-sections/ProductTeaserCard"
-import { BankingScaleHero } from "@/components/landingPage-sections/Hero"
+import { CorporateTrainingHero} from "@/components/landingPage-sections/Hero"
 import { CaseStudiesCarousel } from "@/components/landingPage-sections/CaseStudiesCarousel"
 import { IntegrationCarousel } from "@/components/landingPage-sections/IntegrationCarousel"
 import { PricingSection } from "@/components/landingPage-sections/PricingSection"
@@ -10,11 +10,10 @@ import { Footer } from "@/components/landingPage-sections/Footer"
 export default function Page() {
   return (
     <>
-      <PortfolioNavbar />
+      <CorporateTrainingNavbar />
       <ProductTeaserCard />
-      <BankingScaleHero />
+      <CorporateTrainingHero />
       <CaseStudiesCarousel />
-      <IntegrationCarousel />
       <FAQSection />
       <Footer />
     </>
