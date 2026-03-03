@@ -58,58 +58,72 @@ export default function AcceptInvitePage() {
     loadInvite()
   }, [token])
 
-  const handleAccept = async () => {
-    if (!invite) return
-    setProcessing(true)
+const handleAccept = async () => {
+  if (!invite) return
+  setProcessing(true)
 
-    const { data: auth } = await supabase.auth.getUser()
+  const { data: auth } = await supabase.auth.getUser()
 
-    //  Not logged in → redirect to signup/login WITH redirectTo
-    if (!auth.user) {
-      const redirectTo = `${window.location.origin}/invite/${token}`
-      router.push(
-        `/signup?email=${encodeURIComponent(invite.email)}&redirectTo=${encodeURIComponent(redirectTo)}`
-      )
-      return
-    }
+  const redirectTo = `/invite/${token}`
 
-    //  Accept invite
-    await supabase
-      .from("invites")
-      .update({
-        status: "accepted",
-        accepted: true,
-        accepted_at: new Date().toISOString(),
-      })
-      .eq("id", invite.id)
-
-    //  Prevent duplicate enrollment
-    const { data: existingEnrollment } = await supabase
-      .from("enrollments")
-      .select("id")
-      .eq("user_id", auth.user.id)
-      .eq("course_id", invite.course_id)
-      .maybeSingle()
-
-    if (!existingEnrollment) {
-      await supabase.from("enrollments").insert({
-        user_id: auth.user.id,
-        course_id: invite.course_id,
-        company_id: invite.company_id,
-        status: "active",
-      })
-    }
-
-    await supabase
-      .from("invites")
-      .update({
-        status: "enrolled",
-        enrolled_at: new Date().toISOString(),
-      })
-      .eq("id", invite.id)
-
-    router.push(`/learn/${invite.course_id}`)
+  // 🔐 Not logged in → ALWAYS go to login
+  if (!auth.user) {
+    router.push(
+      `/login?email=${encodeURIComponent(
+        invite.email
+      )}&invite=${token}&redirectTo=${encodeURIComponent(redirectTo)}`
+    )
+    return
   }
+
+  // 🔐 Logged in but wrong email
+  if (auth.user.email !== invite.email) {
+    await supabase.auth.signOut()
+    router.push(
+      `/login?email=${encodeURIComponent(
+        invite.email
+      )}&invite=${token}&redirectTo=${encodeURIComponent(redirectTo)}`
+    )
+    return
+  }
+
+  // ✅ Accept invite
+  await supabase
+    .from("invites")
+    .update({
+      status: "accepted",
+      accepted: true,
+      accepted_at: new Date().toISOString(),
+    })
+    .eq("id", invite.id)
+
+  // Prevent duplicate enrollment
+  const { data: existingEnrollment } = await supabase
+    .from("enrollments")
+    .select("id")
+    .eq("user_id", auth.user.id)
+    .eq("course_id", invite.course_id)
+    .maybeSingle()
+
+  if (!existingEnrollment) {
+    await supabase.from("enrollments").insert({
+      user_id: auth.user.id,
+      course_id: invite.course_id,
+      company_id: invite.company_id,
+      status: "active",
+    })
+  }
+
+  await supabase
+    .from("invites")
+    .update({
+      status: "enrolled",
+      enrolled_at: new Date().toISOString(),
+    })
+    .eq("id", invite.id)
+
+  router.push(`/learn/${invite.course_id}`)
+}
 
   if (loading) {
     return (

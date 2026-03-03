@@ -92,10 +92,16 @@ export function SignupForm({
       
       )
 
-      // ✅ Non-invite fallback
-      if (!isInviteSignup) {
-        router.push("/login")
-      }
+if (isInviteSignup) {
+  // After signup → go to login WITH invite token
+  router.push(
+    `/login?email=${encodeURIComponent(
+      email
+    )}&invite=${inviteToken}&redirectTo=${encodeURIComponent(redirectTo)}`
+  )
+} else {
+  router.push("/login")
+}
     } catch (err: any) {
       console.error(err)
       setError(err?.message || "Failed to create account.")

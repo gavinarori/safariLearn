@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth";
 import { useRouter } from 'next/navigation'
+import { useSearchParams } from "next/navigation"
 
 
 
@@ -21,11 +22,18 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"form">) {
   const { signIn } = useAuth();
-    const router = useRouter()
-  const [email, setEmail] = useState("");
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const inviteToken = searchParams.get("invite")
+  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard"
+  const inviteEmail = searchParams.get("email")
+  const [email, setEmail] = useState(inviteEmail ?? "")
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +42,11 @@ export function LoginForm({
 
     try {
       await signIn(email, password);
-      router.push("/dashboard") 
+      if (inviteToken) {
+  router.push(redirectTo)
+} else {
+  router.push("/dashboard")
+}
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to sign in.");

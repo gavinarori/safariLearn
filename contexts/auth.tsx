@@ -53,27 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // auto create profile if missing
-    if (!data) {
-      const { data: created, error: insertError } = await supabase
-        .from("users")
-        .insert({
-          id: authUser.id,
-          email: authUser.email,
-          role: "employee",
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error("Profile auto-create error:", insertError);
-        return;
-      }
-
-      setUser(created);
-      return;
-    }
-
     setUser(data);
   };
 
