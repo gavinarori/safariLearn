@@ -7,6 +7,7 @@ import {
   useState,
   ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/superbase/client";
 
 type UserProfile = {
@@ -35,7 +36,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = createClient();
-
+  const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
 
@@ -117,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    router.push("/login");
   };
 
   const value: AuthContextType = {
