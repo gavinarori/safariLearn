@@ -42,7 +42,7 @@ export default function Page() {
       const supabase = createClient()
       const service = new UserDashboardService(supabase)
 
-      const rows = await service.getCourses()
+      const rows = await service.getEnrolledCourses()
 
       const mapped: Course[] =
         rows?.map((r: any, i: number) => ({

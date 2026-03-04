@@ -69,6 +69,79 @@ async getSummary(): Promise<UserDashboardSummary | null> {
     return data ?? []
   }
 
+  async getEnrolledCourses(): Promise<UserCourseStatus[]> {
+  const { data: authData } = await this.supabase.auth.getUser()
+  const userId = authData.user?.id
+  if (!userId) return []
+
+
+  const { data: enrollments, error } = await this.supabase
+    .from("enrollments")
+    .select(`
+      enrolled_at,
+      course_id,
+      courses (
+        id,
+        title
+      )
+    `)
+    .eq("user_id", userId)
+    .in("status", ["active", "completed"])
+    .order("enrolled_at", { ascending: false })
+
+  if (error) throw error
+  if (!enrollments) return []
+
+  const courseIds = enrollments.map((e) => e.course_id)
+
+  const { data: lessons } = await this.supabase
+    .from("lessons")
+    .select("id, course_id")
+    .in("course_id", courseIds)
+
+  const lessonIds = lessons?.map((l) => l.id) ?? []
+
+  const { data: lessonProgress } = await this.supabase
+    .from("lesson_progress")
+    .select("lesson_id")
+    .eq("user_id", userId)
+    .eq("is_completed", true)
+    .in("lesson_id", lessonIds)
+
+
+  return enrollments.map((enrollment: any) => {
+    const courseLessons =
+      lessons?.filter((l) => l.course_id === enrollment.course_id) ?? []
+
+    const totalLessons = courseLessons.length
+
+    const completedLessons =
+      lessonProgress?.filter((lp) =>
+        courseLessons.some((l) => l.id === lp.lesson_id)
+      ).length ?? 0
+
+    const progress =
+      totalLessons === 0
+        ? 0
+        : Math.round((completedLessons / totalLessons) * 100)
+
+    let status: CourseStatus = "not_started"
+    if (progress === 100) status = "completed"
+    else if (progress > 0) status = "in_progress"
+
+    return {
+      user_id: userId,
+      course_id: enrollment.course_id,
+      course_name: enrollment.courses?.title ?? "Untitled Course",
+      status,
+      progress_percent: progress,
+      enrolled_at: enrollment.enrolled_at,
+
+      completed_lessons: completedLessons,
+      total_lessons: totalLessons,
+    }
+  })
+}
 
   async getChart(): Promise<UserProgressChart[]> {
     const { data, error } = await this.supabase
