@@ -66,7 +66,7 @@ const handleAccept = async () => {
 
   const redirectTo = `/invite/${token}`
 
-  // 🔐 Not logged in → ALWAYS go to login
+  // 🔐 Not logged in
   if (!auth.user) {
     router.push(
       `/login?email=${encodeURIComponent(
@@ -87,7 +87,14 @@ const handleAccept = async () => {
     return
   }
 
-  // ✅ Accept invite
+  await supabase
+    .from("users")
+    .update({
+      company_id: invite.company_id,
+    })
+    .eq("id", auth.user.id)
+
+
   await supabase
     .from("invites")
     .update({

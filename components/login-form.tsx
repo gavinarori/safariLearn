@@ -14,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth";
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from "next/navigation"
+import { createClient } from "@/superbase/client"
+
+const supabase = createClient()
 
 
 
@@ -42,8 +45,24 @@ export function LoginForm({
 
     try {
       await signIn(email, password);
-      if (inviteToken) {
+
+if (inviteToken) {
   router.push(redirectTo)
+  return
+}
+
+
+const { data: invite } = await supabase
+  .from("invites")
+  .select("token")
+  .eq("email", email)
+  .in("status", ["sent", "viewed"])
+  .gt("expires_at", new Date().toISOString())
+  .maybeSingle()
+
+
+if (invite) {
+  router.push(`/invite/${invite.token}`)
 } else {
   router.push("/dashboard")
 }

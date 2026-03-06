@@ -85,7 +85,7 @@ export function SignupForm({
         password,
         {
           full_name: fullName,
-          role: isInviteSignup ? "employee" : "company_admin",
+          role: "employee",
           avatar_url: avatarUrl || null,
           bio: bio || null,
         },
