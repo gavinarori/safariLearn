@@ -5,15 +5,20 @@ import { useEffect, useState } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable, Course } from "@/components/data-table"
+import { EmployeesProgressTable } from "@/components/employees-data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
+
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
 import { createClient } from "@/superbase/client"
-import { UserDashboardService } from "@/services/userDashboardService"
+import {
+  UserDashboardService,
+  EmployeeCourseProgress,
+} from "@/services/userDashboardService"
 
 
 
@@ -35,12 +40,29 @@ function TableSkeleton() {
 
 export default function Page() {
   const [courses, setCourses] = useState<Course[]>([])
-  const [loading, setLoading] = useState(true)
+  const [employees, setEmployees] = useState<EmployeeCourseProgress[]>([])
+  const [loadingCourses, setLoadingCourses] = useState(true)
+  const [loadingEmployees, setLoadingEmployees] = useState(true)
+  const [role, setRole] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       const supabase = createClient()
       const service = new UserDashboardService(supabase)
+
+      const { data } = await supabase.auth.getUser()
+      const userId = data.user?.id
+      if (!userId) return
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .single()
+
+      const userRole = userData?.role ?? null
+      setRole(userRole)
+
 
       const rows = await service.getEnrolledCourses()
 
@@ -58,7 +80,14 @@ export default function Page() {
         })) ?? []
 
       setCourses(mapped)
-      setLoading(false)
+      setLoadingCourses(false)
+
+      if (userRole === "company_admin") {
+        const progress = await service.getCompanyEmployeesCourseProgress()
+        setEmployees(progress)
+      }
+
+      setLoadingEmployees(false)
     }
 
     load()
@@ -82,6 +111,7 @@ export default function Page() {
 
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
+
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
 
               <SectionCards />
@@ -90,15 +120,27 @@ export default function Page() {
                 <ChartAreaInteractive />
               </div>
 
+    
               <div className="px-4 lg:px-6">
-                {loading ? (
+                {loadingCourses ? (
                   <TableSkeleton />
                 ) : (
                   <DataTable data={courses} />
                 )}
               </div>
 
+              {role === "company_admin" && (
+                <div className="px-4 lg:px-6">
+                  {loadingEmployees ? (
+                    <TableSkeleton />
+                  ) : (
+                    <EmployeesProgressTable data={employees} />
+                  )}
+                </div>
+              )}
+
             </div>
+
           </div>
         </div>
       </SidebarInset>
