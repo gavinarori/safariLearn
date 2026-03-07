@@ -20,33 +20,11 @@ import { toast } from "sonner";
 
 const supabase = createClient();
 
-
 const seatPlans = [
-  {
-    id: "individual",
-    name: "Individual",
-    seats: 1,
-    description: "Single learner access",
-  },
-  {
-    id: "team_10",
-    name: "Team 10",
-    seats: 10,
-    description: "Invite up to 10 employees",
-    recommended: true,
-  },
-  {
-    id: "team_25",
-    name: "Team 25",
-    seats: 25,
-    description: "Invite up to 25 employees",
-  },
-  {
-    id: "team_50",
-    name: "Team 50",
-    seats: 50,
-    description: "Invite up to 50 employees",
-  },
+  { id: "individual", name: "Individual", seats: 1, description: "Single learner access" },
+  { id: "team_10", name: "Team 10", seats: 10, description: "Invite up to 10 employees", recommended: true },
+  { id: "team_25", name: "Team 25", seats: 25, description: "Invite up to 25 employees" },
+  { id: "team_50", name: "Team 50", seats: 50, description: "Invite up to 50 employees" },
 ];
 
 export default function PricingContent() {
@@ -62,12 +40,9 @@ export default function PricingContent() {
 
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-
   useEffect(() => {
     const loadUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
         router.push(
@@ -86,14 +61,11 @@ export default function PricingContent() {
         .eq("id", user.id)
         .single();
 
-      if (profile?.company_id) {
-        setCompanyId(profile.company_id);
-      }
+      if (profile?.company_id) setCompanyId(profile.company_id);
     };
 
     loadUser();
   }, [router]);
-
 
   const calculatePrice = (seats: number) => {
     const total = coursePrice * seats;
@@ -101,51 +73,50 @@ export default function PricingContent() {
     return total - discount;
   };
 
-
-const handleCheckout = async (plan: any) => {
-  if (!courseId || !userEmail || !userId) {
-    toast.error("Missing required data");
-    return;
-  }
-
-  try {
-    setLoadingPlan(plan.id);
-
-    const amountKES = calculatePrice(plan.seats);
-    const amount = Math.round(amountKES * 100); 
-
-    const res = await fetch("/api/paystack/initialize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: userEmail,
-        amount,
-        courseId,
-        userId,
-        companyId,
-        planId: plan.id,
-        seats: plan.seats,
-        currency: "KES",
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || "Payment initialization failed");
+  const handleCheckout = async (plan: any) => {
+    if (!courseId || !userEmail || !userId) {
+      toast.error("Missing required data");
+      return;
     }
 
-    window.location.href = data.authorization_url;
+    try {
+      setLoadingPlan(plan.id);
 
-  } catch (err: any) {
-    console.error(err);
-    toast.error(err.message || "Payment error");
-  } finally {
-    setLoadingPlan(null);
-  }
-};
+      const amountKES = calculatePrice(plan.seats);
+      const amount = Math.round(amountKES * 100);
+
+      const res = await fetch("/api/paystack/initialize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          amount,
+          courseId,
+          userId,
+          companyId,
+          planId: plan.id,
+          seats: plan.seats,
+          currency: "KES"
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Payment initialization failed");
+      }
+
+      window.location.href = data.authorization_url;
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Payment error");
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   if (!coursePrice) {
     return (
@@ -172,12 +143,8 @@ const handleCheckout = async (plan: any) => {
           const originalPrice = coursePrice * plan.seats;
 
           return (
-            <Card
-              key={plan.id}
-              className={`relative ${
-                plan.recommended ? "border-primary shadow-lg bg-primary/5" : ""
-              }`}
-            >
+            <Card key={plan.id} className={`relative ${plan.recommended ? "border-primary shadow-lg bg-primary/5" : ""}`}>
+
               {plan.recommended && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
                   Most Popular
@@ -203,28 +170,6 @@ const handleCheckout = async (plan: any) => {
                   )}
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex gap-2 items-center">
-                    <Check className="w-4 h-4 text-green-500" />
-                    {plan.seats} employee seat{plan.seats > 1 && "s"}
-                  </div>
-
-                  <div className="flex gap-2 items-center">
-                    <Check className="w-4 h-4 text-green-500" />
-                    Invite employees via email
-                  </div>
-
-                  <div className="flex gap-2 items-center">
-                    <Check className="w-4 h-4 text-green-500" />
-                    Progress tracking
-                  </div>
-
-                  <div className="flex gap-2 items-center">
-                    <Check className="w-4 h-4 text-green-500" />
-                    10% team discount
-                  </div>
-                </div>
-
                 <Button
                   className="w-full"
                   disabled={loadingPlan === plan.id}
@@ -239,6 +184,7 @@ const handleCheckout = async (plan: any) => {
                     `Buy ${plan.seats} Seat${plan.seats > 1 ? "s" : ""}`
                   )}
                 </Button>
+
               </CardContent>
             </Card>
           );

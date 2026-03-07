@@ -1,82 +1,35 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { createClient } from "@supabase/supabase-js"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { reference, courseId, planId } = body
+    const { reference } = await req.json()
 
-    console.log("Received payload:", { reference, courseId, planId })
-
-    if (!reference || !courseId || !planId) {
+    if (!reference) {
       return NextResponse.json(
-        { message: "Missing reference, courseId, or planId" },
+        { message: "Missing reference" },
         { status: 400 }
       )
     }
 
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
-        !process.env.SUPABASE_SERVICE_ROLE_KEY ||
-        !process.env.PAYSTACK_SECRET_KEY) {
-      console.error("Missing environment variables")
-      return NextResponse.json(
-        { message: "Server configuration error" },
-        { status: 500 }
-      )
-    }
-
-    const cookieStore = await cookies()
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY, // Use service role key
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      console.error("Authentication error:", authError)
-      return NextResponse.json(
-        { message: "User not authenticated" },
-        { status: 401 }
-      )
-    }
-
-    console.log("Authenticated user:", user.id)
-
-    //  Verify payment with Paystack
-    console.log("Verifying payment with Paystack...")
+    // Verify payment with Paystack
     const paystackRes = await fetch(
       `https://api.paystack.co/transaction/verify/${reference}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json",
         },
       }
     )
 
-    if (!paystackRes.ok) {
-      console.error("Paystack API error:", paystackRes.status)
-      return NextResponse.json(
-        { message: "Failed to verify payment with Paystack" },
-        { status: 400 }
-      )
-    }
-
     const result = await paystackRes.json()
-    console.log("Paystack result:", result)
 
-    if (!result.status || result.data?.status !== "success") {
+    if (!result.status || result.data.status !== "success") {
       return NextResponse.json(
         { message: "Payment not successful" },
         { status: 400 }
@@ -85,71 +38,63 @@ export async function POST(req: Request) {
 
     const amount = result.data.amount / 100
     const currency = result.data.currency
+    const email = result.data.customer?.email
 
-    //  Deduplicate payment
-    console.log("Checking for existing payment...")
-    const { data: existingPayment, error: paymentCheckError } = await supabase
+    const metadata = result.data.metadata || {}
+
+    const courseId = metadata.courseId
+    const planId = metadata.planId
+    const seats = metadata.seats
+    const companyId = metadata.companyId
+
+    if (!courseId || !email) {
+      return NextResponse.json(
+        { message: "Missing metadata" },
+        { status: 400 }
+      )
+    }
+
+    // Prevent duplicate payment
+    const { data: existingPayment } = await supabase
       .from("payments")
       .select("id")
       .eq("reference", reference)
       .maybeSingle()
 
-    if (paymentCheckError && paymentCheckError.code !== 'PGRST116') {
-      console.error("Payment check error:", paymentCheckError)
-      return NextResponse.json(
-        { message: "Database error checking payment" },
-        { status: 500 }
-      )
+    if (!existingPayment) {
+      await supabase.from("payments").insert({
+        course_id: courseId,
+        company_id: companyId,
+        plan_id: planId,
+        seats,
+        amount,
+        currency,
+        reference,
+        status: "success",
+        payment_method: "paystack",
+      })
     }
 
-    if (existingPayment) {
-      console.log("Payment already exists")
-      return NextResponse.json({ success: true })
-    }
-
-    //  Save payment
-    console.log("Saving payment...")
-    const { error: paymentError } = await supabase.from("payments").insert({
-      course_id: courseId,
-      plan_id: planId,
-      amount,
-      currency,
-      reference,
-      status: "success",
-      payment_method: "paystack",
-    })
-
-    if (paymentError) {
-      console.error("Payment insert error:", paymentError)
-      return NextResponse.json(
-        { message: "Failed to save payment", error: paymentError.message },
-        { status: 500 }
-      )
-    }
-
-    //  Get user from public.users table
-    console.log("Getting user from users table...")
-    const { data: userData, error: userFetchError } = await supabase
+    // Get user from public.users table
+    const { data: userData, error: userError } = await supabase
       .from("users")
       .select("id")
-      .eq("email", user.email)
+      .eq("email", email)
       .single()
 
-    if (userFetchError || !userData) {
-      console.error("User not found in users table:", userFetchError)
+    if (userError || !userData) {
       return NextResponse.json(
         { message: "User profile not found" },
         { status: 404 }
       )
     }
 
-    //  Enroll user
-    console.log("Enrolling user...")
-    const { error: enrollmentError } = await supabase
+    // Enroll user
+    const { error: enrollError } = await supabase
       .from("enrollments")
       .upsert(
         {
-          user_id: userData.id, // Use the UUID from public.users table
+          user_id: userData.id,
           course_id: courseId,
           status: "active",
           progress: 0,
@@ -157,24 +102,23 @@ export async function POST(req: Request) {
         { onConflict: "user_id,course_id" }
       )
 
-    if (enrollmentError) {
-      console.error("Enrollment error:", enrollmentError)
+    if (enrollError) {
       return NextResponse.json(
-        { message: "Payment saved but enrollment failed", error: enrollmentError.message },
+        { message: "Enrollment failed", error: enrollError.message },
         { status: 500 }
       )
     }
 
-    console.log("Success!")
-    return NextResponse.json({ success: true })
-    
+    return NextResponse.json({
+      success: true,
+      courseId
+    })
+
   } catch (err) {
-    console.error("Paystack verify error:", err)
+    console.error(err)
+
     return NextResponse.json(
-      { 
-        message: "Server error", 
-        error: err instanceof Error ? err.message : "Unknown error" 
-      },
+      { message: "Server error" },
       { status: 500 }
     )
   }
