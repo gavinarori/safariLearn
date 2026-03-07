@@ -51,9 +51,55 @@ export interface InviteHistoryItem {
 }
 
 export class InviteManager {
-  /**
-   * 🔒 Send invites via secure Edge Function
-   */
+  
+  static async getAvailableSeats(): Promise<{
+    totalPaidSeats: number
+    usedSeats: number
+    availableSeats: number
+  }> {
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth.user) throw new Error("Not authenticated")
+
+    // Get user's company
+    const { data: user, error: userErr } = await supabase
+      .from("users")
+      .select("company_id")
+      .eq("id", auth.user.id)
+      .single()
+
+    if (userErr || !user?.company_id) {
+      throw new Error("No company found for user")
+    }
+
+    // Sum all successful payments' seats for this company
+    const { data: payments, error: payErr } = await supabase
+      .from("payments")
+      .select("seats")
+      .eq("company_id", user.company_id)
+      .eq("status", "success")           // or whatever your success status is
+      // .in("status", ["succeeded", "completed", "paid"])  ← adjust as needed
+
+    if (payErr) throw payErr
+
+    const totalPaidSeats = payments?.reduce((sum, p) => sum + (p.seats || 0), 0) ?? 0
+
+    // Count how many invites have been sent (most accurate = count rows in invites)
+    const { count: usedSeats, error: countErr } = await supabase
+      .from("invites")
+      .select("*", { count: "exact", head: true })
+      .eq("company_id", user.company_id)
+      // Optionally filter by course if you want per-course limit:
+      // .eq("course_id", courseId)   ← uncomment if needed
+
+    if (countErr) throw countErr
+
+    return {
+      totalPaidSeats,
+      usedSeats: usedSeats ?? 0,
+      availableSeats: Math.max(0, totalPaidSeats - (usedSeats ?? 0)),
+    }
+  }
+
   static async inviteEmployeesToCourse(invites: CourseInvite) {
     // Get session
     const {
@@ -89,10 +135,7 @@ export class InviteManager {
     return await response.json()
   }
 
-  /**
-   * 📜 Get company invite history
-   * (Client-side read is fine because RLS protects data)
-   */
+
   static async getCompanyInviteHistory(): Promise<InviteHistoryItem[]> {
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user) throw new Error("Not authenticated")
