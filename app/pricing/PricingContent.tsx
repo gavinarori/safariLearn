@@ -1,172 +1,248 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2 } from "lucide-react";
+
 import { createClient } from "@/superbase/client";
 import { toast } from "sonner";
 
 const supabase = createClient();
 
-const pricingPlans = [
+
+const seatPlans = [
   {
-    id: "starter",
-    name: "Starter",
-    subtitle: "Perfect for individuals",
-    description: "Access this course with full features",
-    amountKES: 2999,
-    features: [
-      "Full course access",
-      "Quizzes & certificates",
-      "Progress tracking",
-      "Community access",
-    ],
-    recommended: true,
-    cta: "Enroll Now",
+    id: "individual",
+    name: "Individual",
+    seats: 1,
+    description: "Single learner access",
   },
   {
-    id: "enterprise",
-    name: "Enterprise",
-    subtitle: "For large organizations",
-    description: "Custom compliance training at scale",
-    amountKES: null,
-    features: [
-      "Unlimited users",
-      "Custom integrations",
-      "Dedicated support",
-      "SLA & reporting",
-    ],
-    recommended: false,
-    cta: "Contact Sales",
+    id: "team_10",
+    name: "Team 10",
+    seats: 10,
+    description: "Invite up to 10 employees",
+    recommended: true,
+  },
+  {
+    id: "team_25",
+    name: "Team 25",
+    seats: 25,
+    description: "Invite up to 25 employees",
+  },
+  {
+    id: "team_50",
+    name: "Team 50",
+    seats: 50,
+    description: "Invite up to 50 employees",
   },
 ];
 
 export default function PricingContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const courseId = searchParams.get("courseId");
+  const coursePrice = Number(searchParams.get("price")) || 0;
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+
 
   useEffect(() => {
     const loadUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push("/login?redirect=" + encodeURIComponent(window.location.pathname + window.location.search));
+        router.push(
+          "/login?redirect=" +
+            encodeURIComponent(window.location.pathname + window.location.search)
+        );
         return;
       }
 
-      setUserEmail(user.email ?? null);
       setUserId(user.id);
+      setUserEmail(user.email ?? null);
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("company_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.company_id) {
+        setCompanyId(profile.company_id);
+      }
     };
 
     loadUser();
   }, [router]);
 
-  const handlePaystackCheckout = async (plan: typeof pricingPlans[0]) => {
-    if (!courseId || !userEmail || !userId) {
-      toast.error("Missing required data – please try again");
-      return;
-    }
 
-    if (plan.id === "enterprise") {
-      window.location.href = "mailto:sales@yourcompany.com?subject=Enterprise%20Pricing%20Inquiry";
-      return;
-    }
-
-    try {
-      setLoadingPlan(plan.id);
-
-      const res = await fetch("/api/paystack/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: userEmail,
-          amount: plan.amountKES,
-          courseId,
-          userId,
-          planId: plan.id,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Payment initialization failed");
-      }
-
-      window.location.href = data.authorization_url;
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Something went wrong with payment");
-    } finally {
-      setLoadingPlan(null);
-    }
+  const calculatePrice = (seats: number) => {
+    const total = coursePrice * seats;
+    const discount = total * 0.1;
+    return total - discount;
   };
 
+
+const handleCheckout = async (plan: any) => {
+  if (!courseId || !userEmail || !userId) {
+    toast.error("Missing required data");
+    return;
+  }
+
+  try {
+    setLoadingPlan(plan.id);
+
+    const amountKES = calculatePrice(plan.seats);
+    const amount = Math.round(amountKES * 100); 
+
+    const res = await fetch("/api/paystack/initialize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: userEmail,
+        amount,
+        courseId,
+        userId,
+        companyId,
+        planId: plan.id,
+        seats: plan.seats,
+        currency: "KES",
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Payment initialization failed");
+    }
+
+    window.location.href = data.authorization_url;
+
+  } catch (err: any) {
+    console.error(err);
+    toast.error(err.message || "Payment error");
+  } finally {
+    setLoadingPlan(null);
+  }
+};
+
+  if (!coursePrice) {
+    return (
+      <div className="py-20 text-center">
+        <p>Course pricing unavailable</p>
+      </div>
+    );
+  }
+
   return (
-    <section className="max-w-5xl mx-auto px-4 py-16">
-      <div className="grid md:grid-cols-2 gap-8">
-        {pricingPlans.map((plan) => (
-          <Card
-            key={plan.id}
-            className={`relative ${plan.recommended ? "border-primary shadow-lg bg-primary/5" : ""}`}
-          >
-            {plan.recommended && (
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                Recommended
-              </Badge>
-            )}
+    <section className="max-w-6xl mx-auto px-4 py-16">
 
-            <CardHeader>
-              <CardTitle className="text-2xl">{plan.name}</CardTitle>
-              <CardDescription>{plan.subtitle}</CardDescription>
-              <p className="text-sm text-muted-foreground">{plan.description}</p>
-            </CardHeader>
+      <div className="text-center mb-10">
+        <h2 className="text-4xl font-bold">Team & Individual Pricing</h2>
+        <p className="text-muted-foreground mt-2">
+          Save 10% when enrolling teams
+        </p>
+      </div>
 
-            <CardContent className="space-y-6">
-              {plan.amountKES ? (
-                <div className="text-4xl font-bold">
-                  KES {(plan.amountKES / 100).toFixed(2)}
-                </div>
-              ) : (
-                <div className="text-2xl font-semibold">Custom Pricing</div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        {seatPlans.map((plan) => {
+          const finalPrice = calculatePrice(plan.seats);
+          const originalPrice = coursePrice * plan.seats;
+
+          return (
+            <Card
+              key={plan.id}
+              className={`relative ${
+                plan.recommended ? "border-primary shadow-lg bg-primary/5" : ""
+              }`}
+            >
+              {plan.recommended && (
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  Most Popular
+                </Badge>
               )}
 
-              <div className="space-y-2">
-                {plan.features.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">{f}</span>
-                  </div>
-                ))}
-              </div>
+              <CardHeader>
+                <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                <CardDescription>{plan.description}</CardDescription>
+              </CardHeader>
 
-              <Button
-                className="w-full"
-                onClick={() => handlePaystackCheckout(plan)}
-                disabled={loadingPlan === plan.id || !userId}
-              >
-                {loadingPlan === plan.id ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Processing...
-                  </>
-                ) : (
-                  plan.cta
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+              <CardContent className="space-y-6">
+
+                <div>
+                  <div className="text-4xl font-bold">
+                    KES {finalPrice.toLocaleString()}
+                  </div>
+
+                  {plan.seats > 1 && (
+                    <div className="text-sm line-through text-muted-foreground">
+                      KES {originalPrice.toLocaleString()}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex gap-2 items-center">
+                    <Check className="w-4 h-4 text-green-500" />
+                    {plan.seats} employee seat{plan.seats > 1 && "s"}
+                  </div>
+
+                  <div className="flex gap-2 items-center">
+                    <Check className="w-4 h-4 text-green-500" />
+                    Invite employees via email
+                  </div>
+
+                  <div className="flex gap-2 items-center">
+                    <Check className="w-4 h-4 text-green-500" />
+                    Progress tracking
+                  </div>
+
+                  <div className="flex gap-2 items-center">
+                    <Check className="w-4 h-4 text-green-500" />
+                    10% team discount
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full"
+                  disabled={loadingPlan === plan.id}
+                  onClick={() => handleCheckout(plan)}
+                >
+                  {loadingPlan === plan.id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Buy ${plan.seats} Seat${plan.seats > 1 ? "s" : ""}`
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </section>
   );

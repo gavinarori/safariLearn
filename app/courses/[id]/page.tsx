@@ -40,9 +40,6 @@ export default function CourseDetailsPage() {
   const [buttonLoading, setButtonLoading] = useState(false)
   const [events, setEvents] = useState<CalendarEvent[]>([])
 
-  /**
-   * Fetch course + enrollment
-   */
   useEffect(() => {
     const fetchCourse = async () => {
       try {
@@ -82,9 +79,7 @@ export default function CourseDetailsPage() {
     if (courseId) fetchCourse()
   }, [courseId])
 
-  /**
-   * Realtime calendar updates
-   */
+
   useEffect(() => {
     if (!isEnrolled) return
 
@@ -124,9 +119,7 @@ export default function CourseDetailsPage() {
     }
   }, [courseId, isEnrolled])
 
-  /**
-   * Enroll handler
-   */
+
   const handleEnroll = async () => {
     try {
       setButtonLoading(true)
@@ -148,13 +141,11 @@ export default function CourseDetailsPage() {
       const profile = await getCurrentUserProfile()
       if (!profile) throw new Error("Profile missing")
 
-      // Paid → Pricing
-      if (course?.price && course.price > 0) {
-        router.push(`/pricing?courseId=${courseId}`)
-        return
-      }
-
-      // Free → Direct enroll
+if (course?.price && course.price > 0) {
+  router.push(`/pricing?courseId=${courseId}&price=${course.price}`)
+  return
+}
+  
       await supabase.from("enrollments").insert({
         user_id: user.id,
         course_id: courseId,
@@ -277,7 +268,7 @@ export default function CourseDetailsPage() {
             )}
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              {isFree ? "Free" : `$${course.price}`}
+              {isFree ? "Free" : `KES ${Number(course.price).toLocaleString()}`}
             </div>
           </div>
 
@@ -303,9 +294,8 @@ export default function CourseDetailsPage() {
             />
 
             <div className="text-3xl font-bold mb-6">
-              {isFree ? "Free" : `$${course.price}`}
-            </div>
-
+  {isFree ? "Free" : `KES ${Number(course.price).toLocaleString()}`}
+</div>
             <Button
               size="lg"
               className="w-full mb-3"
