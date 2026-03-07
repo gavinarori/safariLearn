@@ -96,6 +96,7 @@ export async function POST(req: Request) {
         {
           user_id: userData.id,
           course_id: courseId,
+          company_id: companyId,
           status: "active",
           progress: 0,
         },
