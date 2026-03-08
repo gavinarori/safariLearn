@@ -250,6 +250,23 @@ export const getCoursesByTrainer = async (trainerId: string): Promise<CourseWith
   }));
 };
 
+export const searchCourses = async (query: string) => {
+  if (!query) return []
+
+  const { data, error } = await supabase
+    .from("courses")
+    .select("id, title, slug, thumbnail_url, price")
+    .eq("status", "published")
+    .ilike("title", `%${query}%`)
+    .limit(5)
+
+  if (error) {
+    console.error(error)
+    return []
+  }
+
+  return data
+}
 
 export const getCoursesByCategory = async (category: string): Promise<CourseWithTrainer[]> => {
   const { data: courses, error } = await supabase
