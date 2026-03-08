@@ -226,7 +226,7 @@ function CourseItem({
   isExpanded: boolean
   onToggle: () => void
 }) {
-  const price = course.price === 0 ? "Free" : `$${course.price}`
+  const price = course.price === 0 ? "Free" : `kes ${course.price}`
 
   return (
     <div

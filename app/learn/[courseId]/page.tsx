@@ -231,22 +231,29 @@ export default function LearnPage() {
     >
       <div className="max-w-4xl mx-auto p-6 space-y-8">
         {/* Banner */}
-        <div className="relative h-[420px] rounded-2xl overflow-hidden">
+        <div className="relative h-96 md:h-[480px] rounded-xl overflow-hidden shadow-lg">
           {currentModule.banner_image_url && (
             <img
               src={currentModule.banner_image_url}
               className="absolute inset-0 w-full h-full object-cover"
+              alt={currentModule.title}
             />
           )}
-          <div className="absolute inset-0 bg-black/60" />
-          <div className="relative h-full flex flex-col justify-end p-8 text-white">
-            <Badge className="w-fit mb-3">
-              Lesson {currentLessonIndex + 1} · Module {currentModuleIndex + 1}
-            </Badge>
-            <h1 className="text-4xl font-bold">{currentModule.title}</h1>
-            {currentModule.description && (
-              <p className="mt-2 max-w-2xl">{currentModule.description}</p>
-            )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+          <div className="relative h-full flex flex-col justify-end p-6 md:p-10 text-white">
+            <div className="space-y-4">
+              <Badge className="w-fit bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30">
+                <span className="text-white">Lesson {currentLessonIndex + 1}</span>
+                <span className="mx-1.5 text-white/60">·</span>
+                <span className="text-white">Module {currentModuleIndex + 1}</span>
+              </Badge>
+              <div className="space-y-3">
+                <h1 className="text-4xl md:text-5xl font-bold text-balance leading-tight">{currentModule.title}</h1>
+                {currentModule.description && (
+                  <p className="text-lg text-white/90 max-w-2xl leading-relaxed">{currentModule.description}</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -258,27 +265,36 @@ export default function LearnPage() {
               </div>
             ))}
 
-            <div className="flex justify-between pt-8 border-t">
+            <div className="flex flex-col sm:flex-row gap-3 justify-between pt-8 border-t mt-12">
               <Button
                 variant="outline"
                 onClick={handlePreviousModule}
                 disabled={isFirstModule}
+                className="gap-2"
+                size="lg"
               >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Previous
+                <ChevronLeft className="w-5 h-5" />
+                <span>Previous Module</span>
               </Button>
 
               {currentModule.quiz ? (
-  <Button onClick={() => setShowQuiz(true)}>
-    {completedModules.has(currentModule.id) ? "Review Quiz" : "Take Module Quiz"}
-  </Button>
-) : (
-  <Button onClick={handleNextModule}>
-    Next
-    <ChevronRight className="w-4 h-4 ml-2" />
-  </Button>
-)}
-
+                <Button 
+                  onClick={() => setShowQuiz(true)}
+                  className="gap-2"
+                  size="lg"
+                >
+                  <span>{completedModules.has(currentModule.id) ? "Review Quiz" : "Take Module Quiz"}</span>
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleNextModule}
+                  className="gap-2"
+                  size="lg"
+                >
+                  <span>Next Module</span>
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              )}
             </div>
           </>
         ) : (
@@ -304,15 +320,27 @@ export default function LearnPage() {
         )}
 
         {allModulesCompleted && (
-          <Card className="bg-primary/5">
-            <CardContent className="flex items-center gap-4 pt-6">
-              <Award className="w-10 h-10" />
-              <div>
-                <h3 className="font-semibold">Course Completed</h3>
-                <p className="text-sm text-muted-foreground">
-                  You finished all modules 🎉
+          <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-primary/30 shadow-lg">
+            <CardContent className="flex flex-col sm:flex-row items-center gap-6 py-8">
+              <div className="p-4 rounded-full bg-primary/20">
+                <Award className="w-8 h-8 text-primary" />
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <h3 className="text-2xl font-bold text-foreground">🎉 Course Completed!</h3>
+                <p className="text-muted-foreground mt-1">
+                  Congratulations! You've successfully completed all modules. Well done on your learning journey!
                 </p>
               </div>
+              <Button 
+                variant="default"
+                onClick={() => {
+                  /* Navigate to course list or certificate */
+                }}
+                className="gap-2"
+              >
+                View Certificate
+                <Award className="w-4 h-4" />
+              </Button>
             </CardContent>
           </Card>
         )}
