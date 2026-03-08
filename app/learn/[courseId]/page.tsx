@@ -328,7 +328,7 @@ export default function LearnPage() {
               <div className="flex-1 text-center sm:text-left">
                 <h3 className="text-2xl font-bold text-foreground">🎉 Course Completed!</h3>
                 <p className="text-muted-foreground mt-1">
-                  Congratulations! You've successfully completed all modules. Well done on your learning journey!
+                  Congratulations! You&apos;ve successfully completed all modules. Well done on your learning journey!
                 </p>
               </div>
               <Button 

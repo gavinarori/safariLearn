@@ -15,6 +15,14 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { EventCalendar } from "@/components/event-calendar/event-calendar"
+import {
+  CalendarEvent,
+  getFullCalendarForUser,
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
+} from "@/services/calendarService"
 
 const ENROLLMENT_STEPS = [
   { number: 1, label: "Course Details", key: "course" },
@@ -51,7 +59,7 @@ export default function EnrollmentFlow() {
     selectedPlan: null,
     paymentReference: null,
   })
-
+  const [events, setEvents] = useState<CalendarEvent[]>([])
   const [buttonLoading, setButtonLoading] = useState(false)
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
 
@@ -225,6 +233,54 @@ export default function EnrollmentFlow() {
     }
   }
 
+    const handleEventAdd = async (event: any) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) throw new Error("User not found")
+
+      const newEvent = await createCalendarEvent({
+        title: event.title,
+        description: event.description,
+        start_time: event.start.toISOString(),
+        end_time: event.end.toISOString(),
+        color: event.color,
+        course_id: courseId,
+        user_id: user.id,
+      })
+
+      setEvents((prev) => [...prev, newEvent])
+      toast.success("Event created")
+    } catch {
+      toast.error("Failed to add event")
+    }
+  }
+
+  const handleEventUpdate = async (event: any) => {
+    if (!event.id) return
+
+    const updated = await updateCalendarEvent(event.id, {
+      title: event.title,
+      description: event.description,
+      start_time: event.start.toISOString(),
+      end_time: event.end.toISOString(),
+      color: event.color,
+    })
+
+    setEvents((prev) =>
+      prev.map((e) => (e.id === updated.id ? updated : e))
+    )
+
+    toast.success("Event updated")
+  }
+
+  const handleEventDelete = async (eventId: string) => {
+    await deleteCalendarEvent(eventId)
+    setEvents((prev) => prev.filter((e) => e.id !== eventId))
+    toast.success("Event deleted")
+  }
   // Handle checkout
   const handleCheckout = async (plan: any) => {
     if (!enrollmentState.userId || !enrollmentState.userEmail) {
@@ -500,7 +556,20 @@ if (loading) {
                       Go to Course
                     </Button>
                   )}
+  
                 </div>
+                                 {isEnrolled && (
+    <div className=" mt-8 w-full max-w-full">
+      <h2 className="text-xl font-semibold mb-4">Track & Plan Your Learning</h2>
+      <EventCalendar
+        courseId={courseId}
+        events={events}
+        onEventAdd={handleEventAdd}
+        onEventUpdate={handleEventUpdate}
+        onEventDelete={handleEventDelete}
+      />
+    </div>
+  )}
               </div>
             </div>
           </div>
