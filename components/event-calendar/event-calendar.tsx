@@ -379,26 +379,7 @@ const handleEventUpdate = (updatedEvent: CalendarEvent) => {
         </div>
 
        <div className="flex flex-1 flex-col">
-  {events.length === 0 ? (
-    <div className="flex flex-col items-center justify-center h-full p-10 bg-muted rounded-lg border border-dashed border-muted/50 text-center gap-4">
-      <div className="text-2xl font-semibold text-muted-foreground">
-        No events scheduled
-      </div>
-      <p className="text-sm text-muted-foreground/80">
-        Your course calendar is empty. Click below or on any day to create schedules for your course.
-      </p>
-      <Button
-        size="lg"
-        onClick={() => {
-          const startTime = new Date();
-          handleEventCreate(startTime); 
-        }}
-      >
-        Create First Event
-      </Button>
-    </div>
-  ) : (
-    <>
+  
       {view === "month" && (
         <MonthView
           currentDate={currentDate}
@@ -430,8 +411,7 @@ const handleEventUpdate = (updatedEvent: CalendarEvent) => {
           onEventSelect={handleEventSelect}
         />
       )}
-    </>
-  )}
+
 </div>
 
 

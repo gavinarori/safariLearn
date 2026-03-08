@@ -21,7 +21,7 @@ export default function Courses() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader onSearch={setSearchQuery} />
+        <SiteHeader  />
         <div className="flex flex-1 flex-col">
           <CourseExplorer searchQuery={searchQuery} />
         </div>
