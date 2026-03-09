@@ -1,202 +1,172 @@
 "use client"
 
-import { Github, Twitter, Linkedin, Mail } from "lucide-react"
-import { motion } from "framer-motion"
+import { Linkedin, Twitter, Github, Mail } from "lucide-react"
 import { IconInnerShadowTop } from "@tabler/icons-react"
+import Link from "next/link"
 
-type FooterLink = {
-  label: string
-  href: string
+const footerLinks = {
+  platform: [
+    { name: "Courses", href: "/courses" },
+    { name: "Dashboard", href: "/dashboard" },
+  ],
+  resources: [
+    { name: "Home", href: "/dashboard" },
+    { name: "About", href: "#" },
+  ],
+  company: [
+    { name: "Privacy Policy", href: "#" },
+    { name: "Terms", href: "#" },
+  ],
 }
 
-type FooterSection = {
-  title: string
-  links: FooterLink[]
-}
-
-type FooterProps = {
-  companyName?: string
-  tagline?: string
-  sections?: FooterSection[]
-  socialLinks?: {
-    twitter?: string
-    linkedin?: string
-    github?: string
-    email?: string
-  }
-  copyrightText?: string
-}
-
-const defaultSections: FooterSection[] = [
-  {
-    title: "Platform",
-    links: [
-      { label: "Features", href: "#features" },
-      { label: "Courses", href: "#courses" },
-      { label: "Pricing", href: "#pricing" },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      { label: "About", href: "#about" },
-      { label: "Contact", href: "#contact" },
-    ],
-  },
-  {
-    title: "Support",
-    links: [
-      { label: "Help Center", href: "#help" },
-      { label: "Community", href: "#community" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { label: "Privacy Policy", href: "#privacy" },
-      { label: "Terms of Service", href: "#terms" },
-    ],
-  },
-]
-
-export const Footer = ({
-  companyName = "SafariLearn.",
-  tagline = "A simple learning platform for trainers and learners",
-  sections = defaultSections,
-  socialLinks = {
-    twitter: "https://twitter.com",
-    linkedin: "https://linkedin.com",
-    email: "hello@auralink.com",
-  },
-  copyrightText,
-}: FooterProps) => {
-  const currentYear = new Date().getFullYear()
-  const copyright = copyrightText || `© ${currentYear} ${companyName}. All rights reserved.`
-
+export const Footer = () => {
   return (
-    <footer className="w-full bg-background border-t border-border text-foreground">
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-16">
-        {/* Main Footer Content */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-12">
-          {/* Brand Column */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="col-span-2"
-          >
-            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-              <a
-                href="/dashboard"
-                className="flex items-center gap-2"
-              >
-                <div className="bg-primary text-primary-foreground flex w-6 h-6 md:w-8 md:h-8 items-center justify-center rounded-md">
-                  <IconInnerShadowTop className="w-4 h-4 md:w-5 md:h-5" />
-                </div>
-                <span className="text-base md:text-lg font-semibold">{companyName}</span>
+    <div className="bg-primary pt-20 px-4">
+
+      <footer className="bg-background w-full max-w-[1350px] mx-auto text-foreground pt-10 lg:pt-14 px-6 sm:px-10 md:px-16 lg:px-24 rounded-t-[2rem] overflow-hidden border border-border">
+
+        {/* GRID */}
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-6 gap-10">
+
+          {/* LEFT BRAND */}
+          <div className="lg:col-span-3 space-y-6">
+
+            <Link href="/" className="flex items-center gap-3">
+
+              <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md">
+                <IconInnerShadowTop className="size-5" />
+              </div>
+
+              <span className="text-xl font-semibold">
+                SafariLearn
+              </span>
+
+            </Link>
+
+            <p className="text-sm text-muted-foreground max-w-md">
+              SafariLearn helps companies train employees with structured
+              courses, quizzes, and real-time manager dashboards.
+              Deliver consistent training and track results across teams.
+            </p>
+
+            {/* SOCIALS */}
+            <div className="flex gap-5">
+
+              <a href="#" className="text-muted-foreground hover:text-foreground">
+                <Twitter size={18} />
               </a>
 
-              <p className="text-sm md:text-base text-muted-foreground mt-2 md:mt-0">{tagline}</p>
+              <a href="#" className="text-muted-foreground hover:text-foreground">
+                <Linkedin size={18} />
+              </a>
+
+              <a href="#" className="text-muted-foreground hover:text-foreground">
+                <Github size={18} />
+              </a>
+
+              <a href="#" className="text-muted-foreground hover:text-foreground">
+                <Mail size={18} />
+              </a>
+
             </div>
 
-            {/* Social Links */}
-            <div className="flex items-center gap-3 mt-6">
-              {socialLinks.twitter && (
-                <a
-                  href={socialLinks.twitter}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors duration-150"
-                  aria-label="Twitter"
-                >
-                  <Twitter className="w-4 h-4" />
-                </a>
-              )}
-              {socialLinks.linkedin && (
-                <a
-                  href={socialLinks.linkedin}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors duration-150"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin className="w-4 h-4" />
-                </a>
-              )}
-              {socialLinks.github && (
-                <a
-                  href={socialLinks.github}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors duration-150"
-                  aria-label="GitHub"
-                >
-                  <Github className="w-4 h-4" />
-                </a>
-              )}
-              {socialLinks.email && (
-                <a
-                  href={`mailto:${socialLinks.email}`}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors duration-150"
-                  aria-label="Email"
-                >
-                  <Mail className="w-4 h-4" />
-                </a>
-              )}
-            </div>
-          </motion.div>
+          </div>
 
-          {/* Link Sections */}
-          {sections.map((section, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.5, delay: index * 0.1, ease: "easeOut" }}
-              className="col-span-1"
-            >
-              <h4 className="text-sm font-medium text-foreground mb-4 uppercase tracking-wide">
-                {section.title}
-              </h4>
-              <ul className="space-y-2 md:space-y-3">
-                {section.links.map((link, linkIndex) => (
-                  <li key={linkIndex}>
-                    <a
+          {/* RIGHT LINKS */}
+          <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-10">
+
+            {/* PLATFORM */}
+            <div>
+              <h3 className="font-medium text-sm mb-4">
+                Platform
+              </h3>
+
+              <ul className="space-y-3 text-sm">
+                {footerLinks.platform.map(link => (
+                  <li key={link.name}>
+                    <Link
                       href={link.href}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
+                      className="text-muted-foreground hover:text-foreground"
                     >
-                      {link.label}
-                    </a>
+                      {link.name}
+                    </Link>
                   </li>
                 ))}
               </ul>
-            </motion.div>
-          ))}
+            </div>
+
+            {/* RESOURCES */}
+            <div>
+              <h3 className="font-medium text-sm mb-4">
+                Resources
+              </h3>
+
+              <ul className="space-y-3 text-sm">
+                {footerLinks.resources.map(link => (
+                  <li key={link.name}>
+                    <Link
+                      href={link.href}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* COMPANY */}
+            <div className="col-span-2 md:col-span-1">
+
+              <h3 className="font-medium text-sm mb-4">
+                Company
+              </h3>
+
+              <ul className="space-y-3 text-sm">
+                {footerLinks.company.map(link => (
+                  <li key={link.name}>
+                    <Link
+                      href={link.href}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+            </div>
+
+          </div>
+
         </div>
 
-        {/* Bottom Bar */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="pt-8 border-t border-border"
-        >
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">{copyright}</p>
-            <div className="flex items-center gap-6">
-              <a
-                href="#status"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
-              >
-                Status
-              </a>
-              <a
-                href="#sitemap"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
-              >
-                Sitemap
-              </a>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </footer>
+        {/* BOTTOM */}
+        <div className="max-w-7xl mx-auto mt-14 pt-6 border-t border-border flex flex-col md:flex-row justify-between items-center gap-3">
+
+          <p className="text-muted-foreground text-sm">
+            © {new Date().getFullYear()} SafariLearn
+          </p>
+
+          <p className="text-sm text-muted-foreground">
+            All rights reserved.
+          </p>
+
+        </div>
+
+        {/* BIG WORDMARK */}
+        <div className="relative">
+
+          <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl h-full max-h-64 bg-muted rounded-full blur-[100px] pointer-events-none" />
+
+          <h1 className="text-center font-extrabold leading-[0.7] text-transparent text-[clamp(3rem,15vw,15rem)] [-webkit-text-stroke:1px_theme(colors.border)] mt-6 select-none">
+            SAFARI
+          </h1>
+
+        </div>
+
+      </footer>
+
+    </div>
   )
 }
