@@ -19,113 +19,118 @@ type ProductTeaserCardProps = {
 
 export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
   const {
-    dailyVolume = "12,000+",
-    dailyVolumeLabel = "EMPLOYEE PROGRESS POINTS TRACKED DAILY",
-    headline = "Enterprise Training Platform for Measurable Workforce Development",
-    subheadline = "Companies enroll teams in structured, reading-first courses with quizzes. Managers get real-time dashboards to track completion, scores, and performance impact — all company-controlled and paid.",
-    description = "Deliver consistent, high-quality training across your organization. Reduce admin time, close skills gaps faster, and prove ROI with built-in assessments and manager visibility. No marketplaces, no individual sign-ups — just scalable corporate learning.",
+    headline = "Corporate training built for real results",
+    subheadline = "Enroll teams into structured courses and track progress in real time.",
+    description = "Give managers full visibility into completion, quiz scores, and performance across the entire company. Deliver consistent training without manual tracking, external marketplaces, or individual payments.",
     videoSrc = "/videos/corporate-dashboard-showcase.mp4",
-    posterSrc = "/african-american-business-people-analyzing-company-charts-diagrams-laptop-create-startup-presentation-paperwork-report-doing-teamwork-collaboration-plan-research-information.jpg", // Suggest: blurred screenshot of team progress/quiz results
-    primaryButtonText = "Book a Demo",
-    primaryButtonHref = "/demo",
-    secondaryButtonText = "View Manager Features",
-    secondaryButtonHref = "/managers",
+    posterSrc = "/students-working-together-project.jpg",
+    primaryButtonText = "Book demo",
+    primaryButtonHref = "/waitlist",
+    secondaryButtonText = "Explore courses",
+    secondaryButtonHref = "/courses",
   } = props
 
   return (
-    <section className="w-full px-8 pt-32 pb-16 bg-background">
+    <section className="w-full bg-background py-24 px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-12 gap-2">
-          
+
+        <div className="grid grid-cols-12 gap-6 lg:gap-8">
+
           {/* LEFT CARD */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, ease: [0.645, 0.045, 0.355, 1] }}
+            transition={{ duration: 0.8 }}
             className="
-              col-span-12 lg:col-span-6 
-              rounded-[40px] p-12 lg:p-16 
-              flex flex-col justify-end 
-              aspect-square overflow-hidden 
-              bg-muted dark:bg-muted/30
+              col-span-12 lg:col-span-6
+              rounded-3xl
+              p-10 lg:p-14
+              flex flex-col justify-end
+              aspect-square
+              overflow-hidden
+              bg-muted/40
             "
           >
-           
 
             {/* HEADLINE */}
             <h1
               className="
-                text-[40px] md:text-[56px] 
-                leading-tight tracking-tight 
-                text-foreground 
-                max-w-[520px] mb-6
+                text-3xl md:text-4xl lg:text-5xl
                 font-semibold
-              
+                tracking-tight
+                leading-tight
+                text-foreground
+                max-w-xl
+                mb-5
               "
             >
               {headline}
             </h1>
 
             {/* SUBHEADLINE */}
-            <p className="text-lg leading-7 text-muted-foreground max-w-[520px] mb-6">
+            <p className="text-lg text-muted-foreground max-w-xl mb-4">
               {subheadline}
             </p>
 
             {/* DESCRIPTION */}
-            <p className="text-base leading-6 text-muted-foreground/90 max-w-[520px] mb-10 opacity-90">
+            <p className="text-sm md:text-base text-muted-foreground/90 max-w-xl mb-8 leading-relaxed">
               {description}
             </p>
 
             {/* BUTTONS */}
-            <ul className="flex gap-1.5 flex-wrap mt-10">
-              <li>
-                <a
-                  href={primaryButtonHref}
-                  onClick={(e) => e.preventDefault()}
-                  className="
-                    block cursor-pointer 
-                    text-primary-foreground bg-primary 
-                    rounded-full px-[18px] py-[15px] 
-                    text-base leading-4 whitespace-nowrap 
-                    transition-all duration-150 hover:rounded-2xl
-                  "
-                >
-                  {primaryButtonText}
-                </a>
-              </li>
+            <div className="flex gap-3 flex-wrap mt-4">
 
-              <li>
-                <a
-                  href={secondaryButtonHref}
-                  onClick={(e) => e.preventDefault()}
-                  className="
-                    block cursor-pointer 
-                    border border-foreground/30 
-                    text-foreground
-                    dark:border-foreground/40
-                    rounded-full px-[18px] py-[15px] 
-                    text-base leading-4 whitespace-nowrap 
-                    transition-all duration-150 hover:rounded-2xl
-                  "
-                >
-                  {secondaryButtonText}
-                </a>
-              </li>
-            </ul>
+              <a
+                href={primaryButtonHref}
+                onClick={(e) => e.preventDefault()}
+                className="
+                  inline-flex items-center gap-2
+                  h-10 px-5
+                  rounded-lg
+                  bg-primary text-primary-foreground
+                  text-sm font-medium
+                  transition hover:opacity-90
+                "
+              >
+                {primaryButtonText}
+                <ArrowUpRight className="w-4 h-4" />
+              </a>
+
+              <a
+                href={secondaryButtonHref}
+                onClick={(e) => e.preventDefault()}
+                className="
+                  inline-flex items-center
+                  h-10 px-5
+                  rounded-lg
+                  border border-border
+                  text-sm font-medium
+                  text-foreground
+                  hover:bg-muted
+                  transition
+                "
+              >
+                {secondaryButtonText}
+              </a>
+
+            </div>
+
           </motion.div>
 
-          {/* RIGHT IMAGE / VIDEO */}
+
+          {/* RIGHT CARD */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, ease: [0.645, 0.045, 0.355, 1], delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
             className="
-              col-span-12 lg:col-span-6 
-              rounded-[40px] 
-              flex justify-center items-center 
-              aspect-square overflow-hidden 
-              bg-card dark:bg-card/50
+              col-span-12 lg:col-span-6
+              rounded-3xl
+              aspect-square
+              overflow-hidden
+              bg-card
               shadow-sm
+              flex items-center justify-center
             "
             style={{
               backgroundImage: `url(${posterSrc})`,
@@ -133,7 +138,7 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
               backgroundPosition: "center",
             }}
           >
-            {/* Video hidden per your original; uncomment when ready */}
+
             <video
               src={videoSrc}
               autoPlay
@@ -143,8 +148,11 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
               poster={posterSrc}
               className="hidden w-full h-full object-cover"
             />
+
           </motion.div>
+
         </div>
+
       </div>
     </section>
   )

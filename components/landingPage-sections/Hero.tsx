@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 type StatItem = {
   value: string
@@ -21,23 +22,23 @@ type DataPoint = {
 
 const stats: StatItem[] = [
   {
-    value: "40-60%",
-    description: "Reduction in training time\nvs traditional methods",
+    value: "40–60%",
+    description: "Faster training delivery\ncompared to traditional programs",
     delay: 0,
   },
   {
     value: "90%+",
-    description: "Course completion rates\nachieved by top teams",
+    description: "Average completion rate\nacross enrolled teams",
     delay: 0.2,
   },
   {
     value: "200+",
-    description: "Companies scaling skills\nwith structured programs",
+    description: "Companies training teams\nwith structured learning",
     delay: 0.4,
   },
   {
-    value: "4.8/5",
-    description: "From L&D managers\n& training leads",
+    value: "4.8 / 5",
+    description: "Rated by managers\nand L&D leaders",
     delay: 0.6,
   },
 ]
@@ -50,7 +51,10 @@ const generateDataPoints = (): DataPoint[] => {
   for (let i = 0; i < 50; i++) {
     const direction = i % 2 === 0 ? "down" : "up"
     const height = Math.floor(Math.random() * 120) + 88
-    const top = direction === "down" ? Math.random() * 150 + 250 : Math.random() * 100 - 80
+    const top =
+      direction === "down"
+        ? Math.random() * 150 + 250
+        : Math.random() * 100 - 80
 
     points.push({
       id: i,
@@ -64,10 +68,11 @@ const generateDataPoints = (): DataPoint[] => {
   return points
 }
 
-export const CorporateTrainingHero = () => {  // Renamed for clarity
+export const CorporateTrainingHero = () => {
   const [isVisible, setIsVisible] = useState(false)
   const [dataPoints] = useState<DataPoint[]>(generateDataPoints())
   const [typingComplete, setTypingComplete] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     setIsVisible(true)
@@ -77,75 +82,91 @@ export const CorporateTrainingHero = () => {  // Renamed for clarity
 
   return (
     <div className="w-full overflow-hidden bg-background">
-      <div className="mx-auto max-w-7xl px-8 py-24 pt-16">
-        <div className="grid grid-cols-12 gap-5 gap-y-16">
-        
-          {/* LEFT SECTION */}
+      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-24 lg:py-28">
+
+        <div className="grid grid-cols-12 gap-8 lg:gap-10 items-center">
+
+          {/* LEFT */}
           <div className="col-span-12 md:col-span-6 relative z-10">
 
-            {/* HEADER TAGLINE */}
-            <div
-              className="relative h-6 inline-flex items-center font-mono uppercase text-xs text-teal-700 dark:text-teal-300 mb-12 px-2"
-            >
-              <div className="flex items-center gap-0.5 overflow-hidden">
-                <motion.span
-                  initial={{ width: 0 }}
-                  animate={{ width: "auto" }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="block whitespace-nowrap overflow-hidden text-primary dark:text-primary-foreground"
-                >
-                  Built for corporate training teams
-                </motion.span>
+            {/* TAGLINE */}
+            <div className="mb-8">
+              <div className="relative inline-flex items-center font-mono uppercase text-xs tracking-wider text-primary/80">
 
-                {/* Typing cursor */}
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: typingComplete ? [1, 0, 1, 0] : 0,
-                  }}
-                  transition={{
-                    duration: 1,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
-                  className="block w-1.5 h-3 bg-teal-700 dark:bg-teal-300 rounded-sm"
-                />
+                <div className="flex items-center gap-1 overflow-hidden">
+
+                  <motion.span
+                    initial={{ width: 0 }}
+                    animate={{ width: "auto" }}
+                    transition={{ duration: 0.8 }}
+                    className="block whitespace-nowrap overflow-hidden"
+                  >
+                    Built for corporate training teams
+                  </motion.span>
+
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{
+                      opacity: typingComplete ? [1, 0, 1, 0] : 0,
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                    }}
+                    className="block w-1.5 h-3 bg-primary rounded-sm"
+                  />
+
+                </div>
               </div>
             </div>
 
             {/* TITLE */}
-            <h2 className="text-[40px] font-normal leading-tight tracking-tight text-gray-900 dark:text-gray-100 mb-6">
-              Close skills gaps at scale{" "}
-              <span className="opacity-40">
-                with company-paid, structured courses and real-time manager tracking.
+            <h1 className="text-4xl lg:text-5xl font-medium leading-tight tracking-tight text-foreground mb-6">
+
+              Train your entire team faster{" "}
+              <span className="opacity-50">
+                with structured, company-managed courses
+                and real-time progress tracking.
               </span>
-            </h2>
+
+            </h1>
 
             {/* DESCRIPTION */}
-            <p className="text-lg leading-6 text-gray-700 dark:text-gray-300 opacity-80 mt-0 mb-6">
-              Enroll your entire team in focused, reading-first programs complete with quizzes and assessments. Deliver consistent training, track quiz scores and completion in real time, and equip managers with powerful dashboards — all company-managed, no individual sign-ups or marketplaces required.
+            <p className="text-base lg:text-lg text-muted-foreground leading-relaxed max-w-xl mb-8">
+
+              Enroll employees into focused learning programs with quizzes,
+              assessments, and manager dashboards. Track completion,
+              monitor performance, and deliver consistent training —
+              all without individual sign-ups or external marketplaces.
+
             </p>
 
-            {/* CTA BUTTON */}
+            {/* CTA */}
             <button
               className="
-                relative inline-flex justify-center items-center leading-4 text-center cursor-pointer whitespace-nowrap
-                outline-none font-medium h-9 px-6 mt-5 text-sm group rounded-lg
-                bg-teal-600 hover:bg-teal-700 text-white
-                shadow-md hover:shadow-lg transition-all duration-200
+                inline-flex items-center gap-2
+                h-10 px-6
+                text-sm font-medium
+                rounded-lg
+                bg-primary text-primary-foreground
+                hover:opacity-90
+                transition
+                shadow-sm hover:shadow-md
               "
+              onClick={()=>{router.push("/waitlist")}}
             >
-              <span className="flex items-center gap-1">
-                Book a Demo
-                <ArrowRight className="w-4 h-4 -mr-1 transition-transform duration-150 group-hover:translate-x-1" />
-              </span>
+              Book demo
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </button>
+
           </div>
 
-          {/* RIGHT SECTION — ANIMATED HEIGHT LINES (unchanged, fits "growth" theme for skills/performance) */}
+
+          {/* RIGHT ANIMATION (unchanged) */}
           <div className="col-span-12 md:col-span-6">
-            <div className="relative w-full h-[416px] -ml-[200px]">
-              <div className="absolute top-0 left-[302px] w-[680px] h-[416px] pointer-events-none">
+            <div className="relative w-full h-[420px] -ml-[180px]">
+              <div className="absolute top-0 left-[300px] w-[680px] h-[420px] pointer-events-none">
+
                 <div className="relative w-full h-full">
 
                   {dataPoints.map((point) => (
@@ -154,7 +175,10 @@ export const CorporateTrainingHero = () => {  // Renamed for clarity
                       initial={{ opacity: 0, height: 0 }}
                       animate={
                         isVisible
-                          ? { opacity: [0, 1, 1], height: [0, point.height, point.height] }
+                          ? {
+                              opacity: [0, 1, 1],
+                              height: [0, point.height, point.height],
+                            }
                           : {}
                       }
                       transition={{
@@ -171,17 +195,7 @@ export const CorporateTrainingHero = () => {  // Renamed for clarity
                             ? "linear-gradient(rgb(180 200 180) 0%, rgb(180 200 180) 10%, rgba(156, 217, 93, 0.1) 40%, rgba(113, 210, 240, 0) 75%)"
                             : "linear-gradient(to top, rgb(180 200 180) 0%, rgb(180 200 180) 10%, rgba(156, 217, 93, 0.1) 40%, rgba(113, 210, 240, 0) 75%)",
                       }}
-                    >
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={isVisible ? { opacity: [0, 1] } : {}}
-                        transition={{ duration: 0.3, delay: point.delay + 1.7 }}
-                        className="absolute -left-[1px] w-2 h-2 bg-primary dark:bg-primary-foreground rounded-full"
-                        style={{
-                          top: point.direction === "down" ? "0px" : `${point.height - 8}px`,
-                        }}
-                      />
-                    </motion.div>
+                    />
                   ))}
 
                 </div>
@@ -189,35 +203,35 @@ export const CorporateTrainingHero = () => {  // Renamed for clarity
             </div>
           </div>
 
-          {/* BOTTOM STATS */}
-          <div className="col-span-12">
-            <div className="overflow-visible pb-5">
-              <div className="grid grid-cols-12 gap-5 relative z-10">
 
-                {stats.map((stat, index) => (
-                  <div key={index} className="col-span-6 md:col-span-3">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
-                      animate={
-                        isVisible
-                          ? { opacity: [0, 1, 1], y: [20, 0, 0], filter: ["blur(4px)", "blur(0px)", "blur(0px)"] }
-                          : {}
-                      }
-                      transition={{ duration: 1.5, delay: stat.delay }}
-                      className="flex flex-col gap-2"
-                    >
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {stat.value}
-                      </p>
-                      <p className="text-xs leading-[13.2px] text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                        {stat.description}
-                      </p>
-                    </motion.div>
-                  </div>
-                ))}
+          {/* STATS */}
+          <div className="col-span-12 mt-10">
 
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={isVisible ? { opacity: 1, y: 0 } : {}}
+                  transition={{
+                    duration: 1,
+                    delay: stat.delay,
+                  }}
+                  className="flex flex-col gap-1"
+                >
+                  <p className="text-2xl font-semibold">
+                    {stat.value}
+                  </p>
+
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                    {stat.description}
+                  </p>
+                </motion.div>
+              ))}
+
             </div>
+
           </div>
 
         </div>
