@@ -3,18 +3,36 @@ import { createClient } from "@/superbase/client"
 const supabase = createClient()
 
 
-export type ModuleSection = {
+export type LessonBlock = {
   id: string
-  type: "text" | "image" | "example"
-  title: string
-  subtitle?: string | null
-  content: string
-  image_url?: string | null
-  key_points?: string[] | null
-  callout?: string | null
+  type:
+    | "text"
+    | "heading"
+    | "image"
+    | "list"
+    | "callout"
+    | "dropdown"
+    | "quote"
+    | "code"
+    | "video"
+    | "file"
+    | "table"
+    | "divider"
+    | "quiz"
+
+  content: string | null
+
+  data: any | null
+
   position: number
-  progress?: SectionProgress
+
+  progress?: BlockProgress
 }
+
+export type BlockProgress = {
+  is_completed: boolean
+}
+
 
 
 export type QuizOption = {
@@ -37,16 +55,6 @@ export type ModuleQuiz = {
   questions: QuizQuestion[]
 }
 
-export type CourseModule = {
-  id: string
-  title: string
-  description?: string | null
-  position: number
-  banner_image_url?: string | null
-  sections: ModuleSection[]
-  quiz?: ModuleQuiz
-  progress?: ModuleProgress
-}
 
 
 export type Lesson = {
@@ -55,16 +63,30 @@ export type Lesson = {
   order_index: number
   is_preview: boolean
   reading_time?: number | null
-  modules: CourseModule[]
-  finalQuiz?: ModuleQuiz
+
+  blocks: LessonBlock[]
+
+  progress?: LessonProgress
 }
 
-export type CourseLessonsData = {
-  lessons: Lesson[]
-}
-
-export type SectionProgress = {
+export type LessonProgress = {
   is_completed: boolean
+}
+
+
+
+export type CourseModule = {
+  id: string
+  title: string
+  description?: string | null
+  position: number
+  banner_image_url?: string | null
+
+  lessons: Lesson[]
+
+  quiz?: ModuleQuiz
+
+  progress?: ModuleProgress
 }
 
 export type ModuleProgress = {
@@ -73,21 +95,20 @@ export type ModuleProgress = {
 
 
 
-export const CourseContentService = {
-async getCourseContent(
-  courseId: string,
-  userId: string
-): Promise<CourseLessonsData> {
-  const { data, error } = await supabase
-    .from("lessons")
-    .select(`
-      id,
-      title,
-      order_index,
-      is_preview,
-      reading_time,
+export type CourseLessonsData = {
+  modules: CourseModule[]
+}
 
-      course_modules (
+
+
+export const CourseContentService = {
+  async getCourseContent(
+    courseId: string,
+    userId: string
+  ): Promise<CourseLessonsData> {
+    const { data, error } = await supabase
+      .from("course_modules")
+      .select(`
         id,
         title,
         description,
@@ -95,22 +116,28 @@ async getCourseContent(
         position,
 
         module_progress (
-          is_completed
+          is_completed,
+          user_id
         ),
 
-        module_sections (
+        lessons (
           id,
-          type,
           title,
-          subtitle,
-          content,
-          image_url,
-          key_points,
-          callout,
-          position,
+          order_index,
+          is_preview,
+          reading_time,
 
-          section_progress (
-            is_completed
+          lesson_progress (
+            is_completed,
+            user_id
+          ),
+
+          lesson_blocks (
+            id,
+            type,
+            content,
+            data,
+            position
           )
         ),
 
@@ -118,10 +145,12 @@ async getCourseContent(
           id,
           passing_score,
           is_final,
+
           quiz_questions (
             id,
             question,
             type,
+
             quiz_options (
               id,
               text,
@@ -129,74 +158,76 @@ async getCourseContent(
             )
           )
         )
-      )
-    `)
-    .eq("course_id", courseId)
-    .eq("course_modules.module_progress.user_id", userId)
-    .eq("course_modules.module_sections.section_progress.user_id", userId)
-    .order("order_index")
+      `)
+      .eq("course_id", courseId)
+      .order("position")
 
-  if (error) throw error
+    if (error) throw error
 
-  return {
-    lessons: (data ?? []).map((lesson) => {
-      const modules = (lesson.course_modules ?? [])
-        .sort((a, b) => a.position - b.position)
-        .map((module) => {
-          const quiz = module.quizzes?.[0]
+    return {
+      modules: (data ?? []).map((module) => {
+        const quiz = module.quizzes?.[0]
 
-          return {
-            id: module.id,
-            title: module.title,
-            description: module.description,
-            position: module.position,
-            banner_image_url: module.banner_image_url ?? null,
-            progress: {
-              is_completed: module.module_progress?.[0]?.is_completed ?? false,
-            },
-            sections: (module.module_sections ?? [])
-              .sort((a, b) => a.position - b.position)
-              .map((s) => ({
-                ...s,
-                progress: {
-                  is_completed:
-                    s.section_progress?.[0]?.is_completed ?? false,
-                },
-              })),
-            quiz: quiz
-              ? {
-                  id: quiz.id,
-                  passing_score: quiz.passing_score,
-                  is_final: quiz.is_final,
-                  questions: quiz.quiz_questions.map((q) => ({
-                    id: q.id,
-                    question: q.question,
-                    type: q.type,
-                    options: q.quiz_options,
-                  })),
-                }
-              : undefined,
-          }
-        })
+        return {
+          id: module.id,
+          title: module.title,
+          description: module.description,
+          position: module.position,
+          banner_image_url: module.banner_image_url ?? null,
 
-      const finalQuiz = modules.find(
-        (m) => m.quiz?.is_final === true
-      )?.quiz
+          progress: {
+            is_completed:
+              module.module_progress?.find(
+                (p) => p.user_id === userId
+              )?.is_completed ?? false,
+          },
 
-      return {
-        id: lesson.id,
-        title: lesson.title,
-        order_index: lesson.order_index,
-        is_preview: lesson.is_preview,
-        reading_time: lesson.reading_time,
-        modules,
-        finalQuiz,
-      }
-    }),
-  }
-},
+          lessons: (module.lessons ?? [])
+            .sort((a, b) => a.order_index - b.order_index)
+            .map((lesson) => ({
+              id: lesson.id,
+              title: lesson.title,
+              order_index: lesson.order_index,
+              is_preview: lesson.is_preview,
+              reading_time: lesson.reading_time,
+
+              progress: {
+                is_completed:
+                  lesson.lesson_progress?.find(
+                    (p) => p.user_id === userId
+                  )?.is_completed ?? false,
+              },
+
+              blocks: (lesson.lesson_blocks ?? [])
+                .sort((a, b) => a.position - b.position)
+                .map((b) => ({
+                  id: b.id,
+                  type: b.type,
+                  content: b.content,
+                  data: b.data,
+                  position: b.position,
+                })),
+            })),
+
+          quiz: quiz
+            ? {
+                id: quiz.id,
+                passing_score: quiz.passing_score,
+                is_final: quiz.is_final,
+
+                questions: quiz.quiz_questions.map((q) => ({
+                  id: q.id,
+                  question: q.question,
+                  type: q.type,
+                  options: q.quiz_options,
+                })),
+              }
+            : undefined,
+        }
+      }),
+    }
+  },
 }
-
 
 export async function markSectionCompleted(
   userId: string,
