@@ -1,4 +1,4 @@
-import { LessonBlock, HeadingBlockData } from '@/lib/types/course';
+import { LessonBlock } from '@/lib/types/course';
 
 interface HeadingBlockProps {
   block: LessonBlock;
@@ -6,8 +6,11 @@ interface HeadingBlockProps {
 }
 
 export default function HeadingBlock({ block, className = '' }: HeadingBlockProps) {
-  const data = block.data as HeadingBlockData;
-  const level = data.level || 2;
+  const data = block.data as any;
+  const level = Math.min(Math.max(data?.level || 2, 1), 6) as 1 | 2 | 3 | 4 | 5 | 6;
+  const text = block.content || '';
+
+  if (!text) return null;
 
   const headingStyles: Record<number, string> = {
     1: 'text-4xl font-bold',
@@ -22,7 +25,7 @@ export default function HeadingBlock({ block, className = '' }: HeadingBlockProp
 
   return (
     <div className={`my-6 ${className}`.trim()}>
-      <HeadingTag className={`${headingStyles[level]} text-foreground`}>{data.text}</HeadingTag>
+      <HeadingTag className={`${headingStyles[level]} text-foreground`}>{text}</HeadingTag>
     </div>
   );
 }

@@ -143,7 +143,8 @@ export interface Course {
   language?: string;
   status?: string;
   updated_at?: string;
-  course_modules: CourseModule[];
+  course_modules?: CourseModule[];
+  modules?: CourseModule[];
 }
 
 // Type guards for discriminated unions

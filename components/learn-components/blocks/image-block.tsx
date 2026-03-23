@@ -1,7 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import { LessonBlock, ImageBlockData } from '@/lib/types/course';
+import { LessonBlock } from '@/lib/types/course';
 import { useState } from 'react';
 
 interface ImageBlockProps {
@@ -9,19 +8,53 @@ interface ImageBlockProps {
   className?: string;
 }
 
-export default function ImageBlock({ block, className = '' }: ImageBlockProps) {
-  const data = block.data as ImageBlockData;
+export default function ImageBlock({
+  block,
+  className = '',
+}: ImageBlockProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
+  const data = block.data as any;
+
+
+  const imageUrl =
+    data?.image ||
+    data?.url ||
+    data?.src ||
+    null;
+
+  const altText =
+    block.content ||
+    data?.alt ||
+    'Lesson image';
+
+  if (!imageUrl) {
+    return (
+      <figure className={`my-6 ${className}`}>
+        <div className="w-full aspect-video flex items-center justify-center bg-muted rounded-lg">
+          No image URL
+        </div>
+      </figure>
+    );
+  }
+
   return (
-    <figure className={`my-6 ${className}`.trim()}>
-      <div className="relative w-full bg-muted rounded-lg overflow-hidden">
+    <figure className={`my-6 ${className}`}>
+
+      <div className="relative w-full rounded-lg overflow-hidden bg-muted">
+
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            Loading...
+          </div>
+        )}
+
         {!hasError ? (
           <img
-            src={data.url}
-            alt={data.alt || 'Lesson image'}
-            className={`w-full h-auto object-cover transition-opacity duration-300 ${
+            src={imageUrl}
+            alt={altText}
+            className={`w-full h-auto transition-opacity duration-300 ${
               isLoading ? 'opacity-0' : 'opacity-100'
             }`}
             onLoad={() => setIsLoading(false)}
@@ -31,12 +64,19 @@ export default function ImageBlock({ block, className = '' }: ImageBlockProps) {
             }}
           />
         ) : (
-          <div className="w-full aspect-video flex items-center justify-center bg-muted text-muted-foreground">
-            <span>Image failed to load</span>
+          <div className="w-full aspect-video flex items-center justify-center">
+            Image failed to load
           </div>
         )}
+
       </div>
-      {data.caption && <figcaption className="mt-2 text-sm text-muted-foreground text-center">{data.caption}</figcaption>}
+
+      {altText && (
+        <figcaption className="text-sm text-muted-foreground mt-2 text-center">
+          {altText}
+        </figcaption>
+      )}
+
     </figure>
   );
 }

@@ -1,4 +1,4 @@
-import { LessonBlock, ListBlockData } from '@/lib/types/course';
+import { LessonBlock } from '@/lib/types/course';
 
 interface ListBlockProps {
   block: LessonBlock;
@@ -6,24 +6,37 @@ interface ListBlockProps {
 }
 
 export default function ListBlock({ block, className = '' }: ListBlockProps) {
-  const data = block.data as ListBlockData;
+  if (!block.content) {
+    return null;
+  }
 
-  const ListTag = data.ordered ? 'ol' : 'ul';
+  // Parse markdown list from content
+  const lines = block.content.split('\n').filter(line => line.trim());
+  
+  // Detect if ordered (numbered) or unordered (- or *)
+  const isOrdered = /^\d+\./.test(lines[0]);
+  
+  // Extract list items
+  const items = lines.map(line => {
+    // Remove list markers: "- item", "* item", "1. item"
+    return line.replace(/^[-*]\s+|\d+\.\s+/, '').trim();
+  }).filter(item => item);
+
+  const ListTag = isOrdered ? 'ol' : 'ul';
 
   return (
     <div className={`my-6 ${className}`.trim()}>
       <ListTag
         className={`space-y-2 pl-6 text-foreground ${
-          data.ordered ? 'list-decimal' : 'list-disc'
+          isOrdered ? 'list-decimal' : 'list-disc'
         }`}
       >
-        {data.items.map((item, index) => (
+        {items.map((item, index) => (
           <li key={index} className="text-base leading-relaxed">
             {item}
           </li>
         ))}
       </ListTag>
     </div>
-    
   );
 }

@@ -1,4 +1,4 @@
-import { LessonBlock, VideoBlockData } from '@/lib/types/course';
+import { LessonBlock } from '@/lib/types/course';
 
 interface VideoBlockProps {
   block: LessonBlock;
@@ -7,6 +7,8 @@ interface VideoBlockProps {
 
 // Extract YouTube/Vimeo video ID from URL
 function getEmbedUrl(url: string): string {
+  if (!url) return '';
+  
   // YouTube
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     const videoId = url.includes('youtu.be')
@@ -17,7 +19,7 @@ function getEmbedUrl(url: string): string {
 
   // Vimeo
   if (url.includes('vimeo.com')) {
-    const videoId = url.split('vimeo.com/')[1];
+    const videoId = url.split('vimeo.com/')[1]?.split('?')[0];
     return `https://player.vimeo.com/video/${videoId}`;
   }
 
@@ -26,20 +28,30 @@ function getEmbedUrl(url: string): string {
 }
 
 export default function VideoBlock({ block, className = '' }: VideoBlockProps) {
-  const data = block.data as VideoBlockData;
+  const data = block.data as any;
+  const url = data?.url || block.content || '';
+  const title = data?.title || '';
+
+  if (!url) {
+    return (
+      <div className={`my-6 ${className} p-4 bg-muted rounded-lg text-muted-foreground text-center`.trim()}>
+        No video URL provided
+      </div>
+    );
+  }
 
   return (
     <figure className={`my-6 ${className}`.trim()}>
       <div className="relative w-full bg-muted rounded-lg overflow-hidden aspect-video">
         <iframe
-          src={getEmbedUrl(data.url)}
-          title={data.title}
+          src={getEmbedUrl(url)}
+          title={title || 'Video'}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           className="absolute inset-0 w-full h-full"
         />
       </div>
-      {data.title && <figcaption className="mt-2 text-sm text-muted-foreground text-center">{data.title}</figcaption>}
+      {title && <figcaption className="mt-2 text-sm text-muted-foreground text-center">{title}</figcaption>}
     </figure>
   );
 }

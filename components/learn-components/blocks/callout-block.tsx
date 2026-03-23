@@ -1,5 +1,5 @@
-import { LessonBlock, CalloutBlockData } from '@/lib/types/course';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { LessonBlock } from '@/lib/types/course';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 interface CalloutBlockProps {
@@ -12,7 +12,7 @@ const iconMap = {
   warning: AlertTriangle,
   success: CheckCircle,
   error: AlertCircle,
-};
+} as const;
 
 const variantMap = {
   info: 'default',
@@ -22,16 +22,20 @@ const variantMap = {
 } as const;
 
 export default function CalloutBlock({ block, className = '' }: CalloutBlockProps) {
-  const data = block.data as CalloutBlockData;
-  const Icon = iconMap[data.type];
-  const variant = variantMap[data.type];
+  // Use content field for callout text, default to 'info' type
+  const data = block.data as any;
+  const type = (data?.type || 'info') as keyof typeof iconMap;
+  const Icon = iconMap[type] || Info;
+  const variant = variantMap[type] || 'default';
+  const text = block.content || '';
+
+  if (!text) return null;
 
   return (
     <div className={`my-6 ${className}`.trim()}>
-      <Alert variant={variant}>
+      <Alert variant={variant as any}>
         <Icon className="h-4 w-4" />
-        <AlertTitle>{data.title}</AlertTitle>
-        <AlertDescription>{data.text}</AlertDescription>
+        <AlertDescription>{text}</AlertDescription>
       </Alert>
     </div>
   );
