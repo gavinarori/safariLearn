@@ -51,7 +51,7 @@ export default function BlockRenderer({ block, className = '' }: BlockRendererPr
     case 'quiz':
       return <QuizBlock block={block} className={baseClassName} />;
     default:
-      const _exhaustive: unknown = block;
+      const _exhaustive: any = block;
       return _exhaustive;
   }
 }
