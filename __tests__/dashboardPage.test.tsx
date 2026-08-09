@@ -15,7 +15,7 @@ jest.mock("@/services/userDashboardService", () => ({
 
 jest.mock("@/superbase/client", () => ({
   createClient: jest.fn(() => {
-    const userQuery = {
+    const query = {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       single: jest.fn().mockResolvedValue({
@@ -28,14 +28,12 @@ jest.mock("@/superbase/client", () => ({
       auth: {
         getUser: jest.fn().mockResolvedValue({
           data: {
-            user: {
-              id: "user1",
-            },
+            user: { id: "user1" },
           },
           error: null,
         }),
       },
-      from: jest.fn(() => userQuery),
+      from: jest.fn(() => query),
     }
   }),
 }))
@@ -86,7 +84,6 @@ jest.mock("@/components/ui/sidebar", () => ({
 describe("Dashboard Page", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-
     mockGetCompanyEmployeesCourseProgress.mockResolvedValue([])
   })
 
